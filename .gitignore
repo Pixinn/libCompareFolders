@@ -1,6 +1,7 @@
-**/build
+**/build*
 **/bin
 **/Debug
 **/Release
 
 .vs/
+.DS_Store
