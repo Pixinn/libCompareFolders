@@ -131,8 +131,8 @@ namespace  cf
         
         
         return diff_t{
-            fs::path{},
-            fs::path{},
+            _root,
+            rhs._root,
             identical,
             different,
             unique_left,

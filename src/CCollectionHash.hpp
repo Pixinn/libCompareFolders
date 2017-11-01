@@ -35,8 +35,8 @@ namespace  cf {
         
         /// @brief Hosts the differences between the *left* and the *right* directories
         typedef struct diff_t {
-            const fs::path dir_left;                ///< Left directory root path
-            const fs::path dir_right;               ///< Right directory root path
+            const fs::path root_left;               ///< Left directory root path
+            const fs::path root_right;              ///< Right directory root path
             const std::list<fs::path> identical;    ///< Identical files
             const std::list<fs::path> different;    ///< Different files
             const std::list<fs::path> unique_left;  ///< Files that are unique to the left directory
@@ -44,7 +44,9 @@ namespace  cf {
             const std::list<renamed_t> renamed;     ///< Files with different reative path that have the same content
         } diff_t;
         
-        CCollectionHash() = default;
+        CCollectionHash(const fs::path& root) :
+            _root{ root }
+        {   }
         ~CCollectionHash() = default;
         
         /// @brief Adds a hash corresponding to a given path
@@ -62,7 +64,8 @@ namespace  cf {
     private:
         std::map<fs::path, std::string> _file_hashes; ///< File pathes and their corresponding hash
         std::map<std::string, std::list<fs::path>> _hash_files; ///< Hash with the corresponding files. Useful for duplicate files.
-        
+        const fs::path _root;
+
         static std::mutex _Mutex; ///< Used to protect the collection if used in a multithreaded environment
     };
     

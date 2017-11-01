@@ -19,11 +19,11 @@ using namespace std;
 namespace cf {
     
     
-    unique_ptr<CCollectionHash> CFactoryHashes::ComputeHashes(const fs::path& root) const
+    CCollectionHash CFactoryHashes::ComputeHashes(const fs::path& root) const
     {
         const auto paths = listFiles(root);
         
-        auto hashes = make_unique<CCollectionHash>();
+        CCollectionHash hashes{ root };
         // TODO Some multithreading! Blocking until all jobs are done.
         for(const auto& path : paths)
         {
@@ -34,7 +34,7 @@ namespace cf {
                                  new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
                                  );
             const auto path_relative = fs::relative(path, root);
-            hashes->setHash(path_relative, hash);
+            hashes.setHash(path_relative, hash);
         }
         return hashes;
     }

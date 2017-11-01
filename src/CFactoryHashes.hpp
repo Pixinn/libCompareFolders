@@ -26,7 +26,7 @@ namespace  cf {
         ~CFactoryHashes(){}
     
         /// @brief Builds a collection with all the directory's files' hashes
-        std::unique_ptr<CCollectionHash> ComputeHashes(const fs::path& root) const;
+        CCollectionHash ComputeHashes(const fs::path& root) const;
     
     private:
         /// @brief Lists and returns all **file** entries located inside the provided directory
