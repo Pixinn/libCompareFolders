@@ -20,9 +20,9 @@ namespace fs = boost::filesystem;
 namespace  cf {
     
     /// @brief This is a collection of hashes
-    ///
-    /// Internally it is built on two symetrical maps that can give the hash of a file or
-    /// the files producing a given hash (useful if some files are duplicated)
+    /// @details Internally it is built on two symetrical maps that can give the hash of a file or
+    /// the files producing a given hash (useful if some files are duplicated).
+    /// All operations are **not** thread safe!
     class CCollectionHash
     {
     public:
@@ -44,6 +44,8 @@ namespace  cf {
             const std::list<renamed_t> renamed;     ///< Files with different reative path that have the same content
         } diff_t;
         
+        /// @brief Constructor
+        /// @param root Root folder containing the hashed files
         CCollectionHash(const fs::path& root) :
             _root{ root }
         {   }
@@ -62,11 +64,9 @@ namespace  cf {
         std::string toString() const;
         
     private:
-        std::map<fs::path, std::string> _file_hashes; ///< File pathes and their corresponding hash
+        std::map<fs::path, std::string> _file_hashes;           ///< File pathes and their corresponding hash
         std::map<std::string, std::list<fs::path>> _hash_files; ///< Hash with the corresponding files. Useful for duplicate files.
-        const fs::path _root;
-
-        static std::mutex _Mutex; ///< Used to protect the collection if used in a multithreaded environment
+        const fs::path _root;                                   ///< Root folder containing all the files hashed 
     };
     
 }

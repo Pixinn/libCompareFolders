@@ -7,6 +7,9 @@
 //
 
 #include <list>
+#include <vector>
+#include <future>
+
 #include <boost/filesystem.hpp>
 #include <cryptopp/sha.h>
 #include <cryptopp/hex.h>
@@ -18,29 +21,46 @@ using namespace std;
 
 namespace cf {
     
+    ////////////////////////
     
     CCollectionHash CFactoryHashes::ComputeHashes(const fs::path& root) const
     {
+        CCollectionHash hashes{ root };
+        mutex mtex;
+
         const auto paths = listFiles(root);
         
-        CCollectionHash hashes{ root };
-        // TODO Some multithreading! Blocking until all jobs are done.
-        for(const auto& path : paths)
         {
-            constexpr bool isUpperCase = true;
-            string hash;
-            CryptoPP::SHA1 hasher;
-            CryptoPP::FileSource(path.c_str(), true, \
-                                 new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
-                                 );
-            const auto path_relative = fs::relative(path, root);
-            hashes.setHash(path_relative, hash);
-        }
+            vector<future<void>> jobs_scheduled;
+            jobs_scheduled.reserve(paths.size());
+
+            for (const auto& path : paths)
+            {
+                jobs_scheduled.push_back(async([&hashes, &root, &mtex, path]
+                {
+                    constexpr bool isUpperCase = true;
+                    string hash;
+                    CryptoPP::SHA1 hasher;
+                    CryptoPP::FileSource(path.c_str(), true, \
+                        new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
+                    );
+                    const auto path_relative = fs::relative(path, root);
+                    
+                    {
+                        std::lock_guard<std::mutex> lock{ mtex };
+                        hashes.setHash(path_relative, hash);
+                    }
+                }));
+            }
+
+        } // Calling the destructor of jobs_scheduled will wait for all the jobs to be executed
+        
         return hashes;
     }
     
-    
-    /// @brief Lists and returns all **file** entries located inside the provided directory
+
+    ///////////////////////
+
     const std::list<fs::path> CFactoryHashes::listFiles(const fs::path& dir) const
     {
         // Collect the files list

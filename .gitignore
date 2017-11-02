@@ -3,5 +3,6 @@
 **/Debug
 **/Release
 
+doc
 .vs/
 .DS_Store

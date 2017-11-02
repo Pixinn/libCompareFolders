@@ -7,11 +7,14 @@
 namespace cf
 {
 
+    /// @brief A recoverable exception
     class ExceptionMinor : public std::runtime_error
     {
     public:
-        ExceptionMinor(const std::string& str)  : 
-            std::runtime_error(str)
+        /// @brief Constructor
+        /// @param msg Message explaining the origin of the exception
+        ExceptionMinor(const std::string& msg)  : 
+            std::runtime_error(msg)
         {   }
     };
 

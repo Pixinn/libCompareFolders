@@ -5,15 +5,10 @@
 namespace  cf
 {
     
-    std::mutex CCollectionHash::_Mutex;
-    
-    
     ///////////////////////
 
     void CCollectionHash::setHash(const boost::filesystem::path& path, const std::string& hash)
-    {
-        std::lock_guard<std::mutex> lock{_Mutex};
-        
+    {        
         // Is it the first time a hash is provided for this file?
         {
             const auto idx =_file_hashes.find(path);
@@ -148,7 +143,6 @@ namespace  cf
     std::string CCollectionHash::toString() const
     {
         std::string str;
-        std::lock_guard<std::mutex> lock{_Mutex};
         for(auto it = _file_hashes.begin(); it != _file_hashes.end(); ++it) {
             str += it->first.string() + " : " + it->second + "\n";
         }

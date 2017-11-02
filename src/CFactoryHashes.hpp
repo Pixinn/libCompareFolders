@@ -19,20 +19,20 @@ namespace fs = boost::filesystem;
 
 namespace  cf {
     
+    /// @brief Produces hashes
     class CFactoryHashes
     {
     public:
-        CFactoryHashes(){}
-        ~CFactoryHashes(){}
+        CFactoryHashes() = default;
+        ~CFactoryHashes() = default;
     
         /// @brief Builds a collection with all the directory's files' hashes
+        /// @param root Root folder: all its files will be hashed
         CCollectionHash ComputeHashes(const fs::path& root) const;
     
     private:
-        /// @brief Lists and returns all **file** entries located inside the provided directory
+        /// @brief Lists and returns all **files** entries located inside the provided directory
         const std::list<fs::path> listFiles(const fs::path&) const;
-        
-        fs::path _root;
     };
     
 }
