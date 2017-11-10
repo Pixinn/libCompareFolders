@@ -23,9 +23,12 @@
 
 #include "CCollectionHash.hpp"
 
+
 namespace fs = boost::filesystem;
 
 namespace  cf {
+
+    class ILogError;
     
     /// @brief Produces hashes
     class CFactoryHashes
@@ -36,7 +39,8 @@ namespace  cf {
     
         /// @brief Builds a collection with all the directory's files' hashes
         /// @param root Root folder: all its files will be hashed
-        CCollectionHash ComputeHashes(const fs::path& root) const;
+        /// @param loggerErr Will log eventual errors
+        CCollectionHash ComputeHashes(const fs::path& root, ILogError& loggerErr) const;
     
     private:
         /// @brief Lists and returns all **files** entries located inside the provided directory

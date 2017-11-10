@@ -27,7 +27,12 @@ using namespace std;
 using namespace cf;
 
 
+// === STATIC INSTANCES
+
+SLogErrorNull SLogErrorNull::_Instance;
+
 // ==== EXCEPTIONS
+
 ExceptionMinor::ExceptionMinor(const std::string& msg) :
     IException{ "Recoverable error: " + msg }
 {   }
@@ -55,7 +60,7 @@ inline const fs::path path_folder(const string str_path)
 // ===== PUBLIC FUNCTIONS
 
 
-diff_t cf::CompareFolders(const std::string& root_left, const std::string root_right, ILogError&)
+diff_t cf::CompareFolders(const std::string& root_left, const std::string root_right, ILogError& logger)
 {
     diff_t diff;
 
@@ -66,8 +71,8 @@ diff_t cf::CompareFolders(const std::string& root_left, const std::string root_r
     const cf::CFactoryHashes factoryHashes;
     try {
 
-        const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1);
-        const auto hashesDir2 = factoryHashes.ComputeHashes(path_folder_2);
+        const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, SLogErrorNull::GetInstance());
+        const auto hashesDir2 = factoryHashes.ComputeHashes(path_folder_2, logger);
         
 //        diff = hashesDir1.compare(hashesDir2); //TODO diff is a class constructed from a diff_t
     }

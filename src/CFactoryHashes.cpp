@@ -24,6 +24,8 @@
 #include <cryptopp/hex.h>
 #include <cryptopp/files.h>
 
+#include "CompareFolders.hpp"
+
 #include "CFactoryHashes.hpp"
 
 
@@ -35,13 +37,12 @@ namespace cf {
     
     ////////////////////////
     
-    CCollectionHash CFactoryHashes::ComputeHashes(const fs::path& root) const
+    /// @details Computing hashes can take some time. Thus, an external error logger must be provided
+    ///          to give the opportunity to report the errors in real time.
+    CCollectionHash CFactoryHashes::ComputeHashes(const fs::path& root, ILogError& logger) const
     {
          
-        std::atomic<unsigned> DBG = 0u;
-
-        
-
+        //std::atomic<unsigned> DBG = 0u;
 
         typedef struct resultHash_t{
             fs::path path;
@@ -56,7 +57,7 @@ namespace cf {
 
         for (const auto& path : paths)
         {
-            jobs_scheduled.push_back(async([&root, path, &DBG]()  -> hash_t
+            jobs_scheduled.push_back(async([&root, path/*, &DBG*/]()  -> hash_t
             {
                 constexpr bool isUpperCase = true;
                 string hash;
@@ -67,10 +68,10 @@ namespace cf {
                 const auto path_relative = fs::relative(path, root);
 
 //                 TEST EXCEPTION
-                ++DBG;
-                if (DBG % 2 == 0) {
-                    throw(std::runtime_error{ path.string() });
-                }
+                //++DBG;
+                //if (DBG % 2 == 0) {
+                //    throw(std::runtime_error{ path.string() });
+                //}
 
                 return hash_t{ path_relative, hash };
             }
@@ -85,8 +86,9 @@ namespace cf {
                 const auto& result = job.get();
                 hashes.setHash(result.path, result.hash);
             }
-            catch (const std::exception& e) {
-                std::cout << e.what() << std::endl;
+            catch (const CryptoPP::Exception& e) {
+                const string message = string{ "An error occured: " } + e.what();
+                logger.log(message);
             }
         }
       

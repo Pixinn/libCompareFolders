@@ -25,6 +25,7 @@
 #include "cryptopp/hex.h"
 #include "cryptopp/files.h"
 
+#include "CompareFolders.hpp"
 #include "CCollectionHash.hpp"
 #include "CFactoryHashes.hpp"
 
@@ -65,8 +66,8 @@ int main(int argc, char* argv[])
     const cf::CFactoryHashes factoryHashes;
     try {
         
-        const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1);
-        const auto hashesDir2 = factoryHashes.ComputeHashes(path_folder_2);
+        const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, cf::SLogErrorNull::GetInstance());
+        const auto hashesDir2 = factoryHashes.ComputeHashes(path_folder_2, cf::SLogErrorNull::GetInstance());
         
         const auto diff = hashesDir1.compare(hashesDir2);
         // ++++++++++ display result
