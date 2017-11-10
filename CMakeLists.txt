@@ -22,41 +22,66 @@ set(CRYTOPP_LIB_DIR ${CMAKE_SOURCE_DIR}/submodules/cryptopp)
 
 ### SOURCES
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin) 
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
-add_executable(${PROJECT_NAME}  ${SRC_DIR}/main.cpp
-                                ${SRC_DIR}/CCollectionHash.hpp
-                                ${SRC_DIR}/CCollectionHash.cpp
-                                ${SRC_DIR}/CFactoryHashes.hpp
-                                ${SRC_DIR}/CFactoryHashes.cpp
-                                ${SRC_DIR}/Exceptions.hpp)
+set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+set(LIB_NAME "CompareFolders")
+add_library(${LIB_NAME} ${SRC_DIR}/CCollectionHash.hpp
+                        ${SRC_DIR}/CCollectionHash.cpp
+                        ${SRC_DIR}/CFactoryHashes.hpp
+                        ${SRC_DIR}/CFactoryHashes.cpp
+						${SRC_DIR}/CompareFolders.cpp
+                        ${INCLUDE_DIR}/CompareFolders.hpp)
+
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)		
+add_executable(${PROJECT_NAME}  ${SRC_DIR}/main.cpp)
                                 
 
 ### COMPILER OPTIONS
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
+# common
+set_property(GLOBAL PROPERTY CXX_STANDARD 14)
+set(COMPILE_OPTIONS_MSVC "/W4" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
 
+# library
+target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
+                                                ${CMAKE_SOURCE_DIR}/submodules													
+                                                ${SRC_DIR}
+										PUBLIC	${INCLUDE_DIR}
+)
 if(MSVC)
 	target_compile_options(
-    ${PROJECT_NAME} PRIVATE 
-    "/W4"
-    "$<$<CONFIG:Debug>:/MTd>"
-    "$<$<CONFIG:Release>:/MT>"
+    ${LIB_NAME} PRIVATE 
+    ${COMPILE_OPTIONS_MSVC}
 )
 endif(MSVC)
 
-
-target_include_directories(${PROJECT_NAME} PRIVATE  ${Boost_INCLUDE_DIRS}
-                                                    ${CMAKE_SOURCE_DIR}/submodules
-                                                    ${CMAKE_CURRENT_SOURCE_DIR}/src) 
+# application
+if(MSVC)
+	target_compile_options(
+    ${PROJECT_NAME} PRIVATE 
+	${COMPILE_OPTIONS_MSVC}
+)
+endif(MSVC)
+target_include_directories(${PROJECT_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS} 			# to be removed
+													${CMAKE_SOURCE_DIR}/submodules	# to be removed												
+													${SRC_DIR}						# to be removed
+													${INCLUDE_DIR}
+) 
                                 
 ### LINK         
-                      
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
+
+# library
+target_link_libraries(${LIB_NAME} ${Boost_LIBRARIES})
 if(MSVC)
-    target_link_libraries(${PROJECT_NAME} 
+    target_link_libraries(${LIB_NAME} 
                             debug       ${CRYTOPP_LIB_DIR}/Win32/Output/Debug/cryptlib.lib
                             optimized   ${CRYTOPP_LIB_DIR}/Win32/Output/Release/cryptlib.lib)
 else()
-    target_link_libraries(${PROJECT_NAME} ${CRYTOPP_LIB_DIR}/libcryptopp.a)
+    target_link_libraries(${LIB_NAME} ${CRYTOPP_LIB_DIR}/libcryptopp.a)
 endif()
+
+# application
+target_link_libraries(${PROJECT_NAME} ${LIB_NAME})

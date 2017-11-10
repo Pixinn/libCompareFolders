@@ -23,6 +23,8 @@
 #include <mutex>
 #include <boost/filesystem.hpp>
 
+#include "CompareFolders.hpp"
+
 namespace fs = boost::filesystem;
 
 namespace  cf {
@@ -34,24 +36,6 @@ namespace  cf {
     class CCollectionHash
     {
     public:
-        /// @brief Files with different path but the very same content.
-        /// Those files can have **duplicates** both left and right
-        typedef struct renamed_t {
-            std::list<fs::path> left;  ///< Left files with the same content
-            std::list<fs::path> right; ///< Right files with the same content
-        }renamed_t;
-        
-        /// @brief Hosts the differences between the *left* and the *right* directories
-        typedef struct diff_t {
-            const fs::path root_left;               ///< Left directory root path
-            const fs::path root_right;              ///< Right directory root path
-            const std::list<fs::path> identical;    ///< Identical files
-            const std::list<fs::path> different;    ///< Different files
-            const std::list<fs::path> unique_left;  ///< Files that are unique to the left directory
-            const std::list<fs::path> unique_right; ///< Files that are unique to the right directory
-            const std::list<renamed_t> renamed;     ///< Files with different reative path that have the same content
-        } diff_t;
-        
         /// @brief Constructor
         /// @param root Root folder containing the hashed files
         CCollectionHash(const fs::path& root) :
@@ -70,6 +54,11 @@ namespace  cf {
         
         /// @brief Converts the stored paths and their hashes to a string
         std::string toString() const;
+
+        /// @brief returns the number of paths
+        inline unsigned size() {
+            return _file_hashes.size();
+        }
         
     private:
         std::map<fs::path, std::string> _file_hashes;           ///< File pathes and their corresponding hash
