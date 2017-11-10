@@ -70,7 +70,7 @@ namespace cf {
 //                 TEST EXCEPTION
                 //++DBG;
                 //if (DBG % 2 == 0) {
-                //    throw(std::runtime_error{ path.string() });
+                //    throw(CryptoPP::Exception{ path.string() });
                 //}
 
                 return hash_t{ path_relative, hash };

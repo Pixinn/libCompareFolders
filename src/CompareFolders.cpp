@@ -62,25 +62,16 @@ inline const fs::path path_folder(const string str_path)
 
 diff_t cf::CompareFolders(const std::string& root_left, const std::string root_right, ILogError& logger)
 {
-    diff_t diff;
-
     const auto path_folder_1 = path_folder(root_left);
     const auto path_folder_2 = path_folder(root_right);
 
     // Compute the hashes
     const cf::CFactoryHashes factoryHashes;
-    try {
 
-        const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, SLogErrorNull::GetInstance());
-        const auto hashesDir2 = factoryHashes.ComputeHashes(path_folder_2, logger);
+    const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, SLogErrorNull::GetInstance());
+    const auto hashesDir2 = factoryHashes.ComputeHashes(path_folder_2, logger);
         
-//        diff = hashesDir1.compare(hashesDir2); //TODO diff is a class constructed from a diff_t
-    }
-    catch (const exception& e)
-    {
-        throw ExceptionFatal{ e.what() }; // TODO Catch exception inside ComputeHashes. Log them???
-    }
+    const auto diff = hashesDir1.compare(hashesDir2);
 
-
-    return diff_t{};
+    return diff;
 }

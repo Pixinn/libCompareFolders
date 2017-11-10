@@ -73,25 +73,25 @@ int main(int argc, char* argv[])
         // ++++++++++ display result
         cout << diff.identical.size() << " files are identical:\n\n";
         for(const auto& file : diff.identical) {
-            cout << file << '\n';
+            cout << '\"' << file << "\"\n";
         }
         cout << "\n====\n\n";
         
         cout << diff.different.size() << " files are different:\n\n";
         for(const auto& file : diff.different) {
-            cout << file << '\n';
+            cout << '\"' << file << "\"\n";
         }
         cout << "\n====\n\n";
         
-        cout << diff.unique_left.size() << " files are unique to " << diff.root_left << ":\n\n";
+        cout << diff.unique_left.size() << " files are unique to \"" << diff.root_left << "\":\n\n";
         for(const auto& file : diff.unique_left) {
-            cout << file << '\n';
+            cout << '\"' << file << "\"\n";
         }
         cout << "\n====\n\n";
         
-        cout << diff.unique_right.size() << " files are unique to " << diff.root_right << ":\n\n";
+        cout << diff.unique_right.size() << " files are unique to \"" << diff.root_right << "\":\n\n";
         for(const auto& file : diff.unique_right) {
-            cout << file << '\n';
+            cout << '\"' << file << "\"\n";;
         }
         cout << "\n====\n\n";
         
@@ -99,10 +99,10 @@ int main(int argc, char* argv[])
         for(const auto& files : diff.renamed) {
             cout << "\n---\n";
             for(const auto renamed : files.left) {
-                cout << diff.root_left / renamed << '\n';
+                cout << '\"' << diff.root_left << renamed << "\"\n";
             }
             for(const auto renamed : files.right) {
-                cout << " -> \t" << diff.root_right  / renamed << '\n';
+                cout << " -> \t\"" << diff.root_right  << renamed << "\"\n";
             }
         }
         cout << endl;
