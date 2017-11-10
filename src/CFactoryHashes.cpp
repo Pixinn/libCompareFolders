@@ -26,6 +26,9 @@
 
 #include "CFactoryHashes.hpp"
 
+
+#include <iostream>
+
 using namespace std;
 
 namespace cf {
@@ -34,36 +37,59 @@ namespace cf {
     
     CCollectionHash CFactoryHashes::ComputeHashes(const fs::path& root) const
     {
-        CCollectionHash hashes{ root };
-        mutex mtex;
+         
+        std::atomic<unsigned> DBG = 0u;
 
+        
+
+
+        typedef struct resultHash_t{
+            fs::path path;
+            string hash;
+        } hash_t;
+
+        // Scheduling jobs to compute hashes
         const auto paths = listFiles(root);
-        
+
+        vector<future<resultHash_t>> jobs_scheduled;
+        jobs_scheduled.reserve(paths.size());
+
+        for (const auto& path : paths)
         {
-            vector<future<void>> jobs_scheduled;
-            jobs_scheduled.reserve(paths.size());
-
-            for (const auto& path : paths)
+            jobs_scheduled.push_back(async([&root, path, &DBG]()  -> hash_t
             {
-                jobs_scheduled.push_back(async([&hashes, &root, &mtex, path]
-                {
-                    constexpr bool isUpperCase = true;
-                    string hash;
-                    CryptoPP::SHA1 hasher;
-                    CryptoPP::FileSource(path.c_str(), true, \
-                        new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
-                    );
-                    const auto path_relative = fs::relative(path, root);
-                    
-                    {
-                        std::lock_guard<std::mutex> lock{ mtex };
-                        hashes.setHash(path_relative, hash);
-                    }
-                }));
-            }
+                constexpr bool isUpperCase = true;
+                string hash;
+                CryptoPP::SHA1 hasher;
+                CryptoPP::FileSource(path.c_str(), true, \
+                    new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
+                );
+                const auto path_relative = fs::relative(path, root);
 
-        } // Calling the destructor of jobs_scheduled will wait for all the jobs to be executed
-        
+//                 TEST EXCEPTION
+                ++DBG;
+                if (DBG % 2 == 0) {
+                    throw(std::runtime_error{ path.string() });
+                }
+
+                return hash_t{ path_relative, hash };
+            }
+            ));
+        }
+
+        // Collecting the results of the jobs
+        CCollectionHash hashes{ root };
+        for (auto& job : jobs_scheduled)
+        {
+            try {
+                const auto& result = job.get();
+                hashes.setHash(result.path, result.hash);
+            }
+            catch (const std::exception& e) {
+                std::cout << e.what() << std::endl;
+            }
+        }
+      
         return hashes;
     }
     

@@ -31,7 +31,8 @@ add_library(${LIB_NAME} ${SRC_DIR}/CCollectionHash.hpp
                         ${SRC_DIR}/CCollectionHash.cpp
                         ${SRC_DIR}/CFactoryHashes.hpp
                         ${SRC_DIR}/CFactoryHashes.cpp
-                        ${INCLUDE_DIR}/Exceptions.hpp)
+						${SRC_DIR}/CompareFolders.cpp
+                        ${INCLUDE_DIR}/CompareFolders.hpp)
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)		
@@ -42,7 +43,7 @@ add_executable(${PROJECT_NAME}  ${SRC_DIR}/main.cpp)
 
 # common
 set_property(GLOBAL PROPERTY CXX_STANDARD 14)
-set(COMPILE_OPTIONS "/W4" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>")
+set(COMPILE_OPTIONS_MSVC "/W4" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
 
 # library
 target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
@@ -53,7 +54,7 @@ target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
 if(MSVC)
 	target_compile_options(
     ${LIB_NAME} PRIVATE 
-    ${COMPILE_OPTIONS}
+    ${COMPILE_OPTIONS_MSVC}
 )
 endif(MSVC)
 
@@ -61,7 +62,7 @@ endif(MSVC)
 if(MSVC)
 	target_compile_options(
     ${PROJECT_NAME} PRIVATE 
-	${COMPILE_OPTIONS}
+	${COMPILE_OPTIONS_MSVC}
 )
 endif(MSVC)
 target_include_directories(${PROJECT_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS} 			# to be removed

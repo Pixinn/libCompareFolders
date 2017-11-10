@@ -70,6 +70,11 @@ namespace  cf {
         
         /// @brief Converts the stored paths and their hashes to a string
         std::string toString() const;
+
+        /// @brief returns the number of paths
+        inline unsigned size() {
+            return _file_hashes.size();
+        }
         
     private:
         std::map<fs::path, std::string> _file_hashes;           ///< File pathes and their corresponding hash
