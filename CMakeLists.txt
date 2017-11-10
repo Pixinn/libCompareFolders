@@ -35,48 +35,59 @@ add_library(${LIB_NAME} ${SRC_DIR}/CCollectionHash.hpp
                         ${INCLUDE_DIR}/CompareFolders.hpp)
 
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)		
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 add_executable(${PROJECT_NAME}  ${SRC_DIR}/main.cpp)
-                                
+
 
 ### COMPILER OPTIONS
 
 # common
 set_property(GLOBAL PROPERTY CXX_STANDARD 14)
 set(COMPILE_OPTIONS_MSVC "/W4" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
+set(COMPILE_OPTIONS_UNIX "-Wall" "-std=c++14" "$<$<CONFIG:Release>:-Werror>")
 
 # library
 target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
-                                                ${CMAKE_SOURCE_DIR}/submodules													
+                                                ${CMAKE_SOURCE_DIR}/submodules
                                                 ${SRC_DIR}
 										PUBLIC	${INCLUDE_DIR}
 )
 if(MSVC)
 	target_compile_options(
-    ${LIB_NAME} PRIVATE 
+    ${LIB_NAME} PRIVATE
     ${COMPILE_OPTIONS_MSVC}
+)
+else()
+	target_compile_options(
+		${LIB_NAME} PRIVATE
+		${COMPILE_OPTIONS_UNIX}
 )
 endif(MSVC)
 
 # application
 if(MSVC)
 	target_compile_options(
-    ${PROJECT_NAME} PRIVATE 
-	${COMPILE_OPTIONS_MSVC}
+    ${PROJECT_NAME} PRIVATE
+		${COMPILE_OPTIONS_MSVC}
+)
+else()
+	target_compile_options(
+		${PROJECT_NAME} PRIVATE
+		${COMPILE_OPTIONS_UNIX}
 )
 endif(MSVC)
 target_include_directories(${PROJECT_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS} 			# to be removed
-													${CMAKE_SOURCE_DIR}/submodules	# to be removed												
+													${CMAKE_SOURCE_DIR}/submodules	# to be removed
 													${SRC_DIR}						# to be removed
 													${INCLUDE_DIR}
-) 
-                                
-### LINK         
+)
+
+### LINK
 
 # library
 target_link_libraries(${LIB_NAME} ${Boost_LIBRARIES})
 if(MSVC)
-    target_link_libraries(${LIB_NAME} 
+    target_link_libraries(${LIB_NAME}
                             debug       ${CRYTOPP_LIB_DIR}/Win32/Output/Debug/cryptlib.lib
                             optimized   ${CRYTOPP_LIB_DIR}/Win32/Output/Release/cryptlib.lib)
 else()

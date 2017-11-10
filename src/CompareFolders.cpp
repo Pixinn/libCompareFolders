@@ -62,7 +62,7 @@ diff_t cf::CompareFolders(const std::string& root_left, const std::string root_r
     const auto path_folder_2 = path_folder(root_right);
 
     // Compute the hashes
-    const cf::CFactoryHashes factoryHashes;
+    const cf::CFactoryHashes factoryHashes{};
 
     const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, logger);
     const auto hashesDir2 = factoryHashes.ComputeHashes(path_folder_2, logger);

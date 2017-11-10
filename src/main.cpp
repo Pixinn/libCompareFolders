@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
     }
     catch (const exception& e)
     {
-        cout << "Error: " << e.what();
+        cout << e.what() << endl;
     }
 
 	return 0;
