@@ -19,32 +19,12 @@
 
 #include <iostream>
 #include <list>
-#include <boost/filesystem.hpp>
-
-#include "cryptopp/sha.h"
-#include "cryptopp/hex.h"
-#include "cryptopp/files.h"
+#include <string>
 
 #include "CompareFolders.hpp"
-#include "CCollectionHash.hpp"
-#include "CFactoryHashes.hpp"
 
 
-namespace fs = boost::filesystem;
 using namespace std;
-
-/// @brief Constructs a path object from a C string
-const fs::path path_folder(const char* const str_path)
-{
-    const fs::path path{ str_path };
-    // Sanity
-    if (!fs::is_directory(path)) {
-        cout << "Error: " << path.string() << " is not a valid directory." << endl;
-        exit(-1);
-    }
-    return path;
-}
-
 
 
 
@@ -57,19 +37,15 @@ int main(int argc, char* argv[])
 	}
 
     // Parse args
-    const auto path_folder_1 = path_folder(argv[1]);
-    const auto path_folder_2 = path_folder(argv[2]);
+    const string path_folder_1{ argv[1] };
+    const string path_folder_2{ argv[2] };
 
-    cout << "\nCOMPARING\n" << path_folder_1 << "\nand\n" << path_folder_2 << "\n" << endl;
+    cout << "\nCOMPARING\n" << '\"' << path_folder_1 << "\"\nand\n\"" << path_folder_2 << "\"\n" << endl;
     
-    // Compute the hashes
-    const cf::CFactoryHashes factoryHashes;
     try {
         
-        const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, cf::SLogErrorNull::GetInstance());
-        const auto hashesDir2 = factoryHashes.ComputeHashes(path_folder_2, cf::SLogErrorNull::GetInstance());
-        
-        const auto diff = hashesDir1.compare(hashesDir2);
+        const auto diff = cf::CompareFolders(path_folder_1, path_folder_2);
+
         // ++++++++++ display result
         cout << diff.identical.size() << " files are identical:\n\n";
         for(const auto& file : diff.identical) {
