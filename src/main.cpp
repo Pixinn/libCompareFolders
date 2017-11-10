@@ -28,6 +28,16 @@ using namespace std;
 
 
 
+/// @Brief custom error "live" logger
+class LogError : public cf::ILogError
+{
+public:
+    void log(const string& err) override {
+        cout << "ARRRRG! " << err << endl;
+    }
+};
+
+
 int main(int argc, char* argv[])
 {
 	// Sanity
@@ -44,7 +54,8 @@ int main(int argc, char* argv[])
     
     try {
         
-        const auto diff = cf::CompareFolders(path_folder_1, path_folder_2);
+        LogError logErr;
+        const auto diff = cf::CompareFolders(path_folder_1, path_folder_2, logErr);
 
         // ++++++++++ display result
         cout << diff.identical.size() << " files are identical:\n\n";

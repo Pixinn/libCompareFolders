@@ -33,13 +33,9 @@ SLogErrorNull SLogErrorNull::_Instance;
 
 // ==== EXCEPTIONS
 
-ExceptionMinor::ExceptionMinor(const std::string& msg) :
-    IException{ "Recoverable error: " + msg }
-{   }
-
 
 ExceptionFatal::ExceptionFatal(const std::string& msg) :
-    IException{ "Fatal error: " + msg }
+    runtime_error{ "Fatal error: " + msg }
 {   }
 
 
@@ -68,7 +64,7 @@ diff_t cf::CompareFolders(const std::string& root_left, const std::string root_r
     // Compute the hashes
     const cf::CFactoryHashes factoryHashes;
 
-    const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, SLogErrorNull::GetInstance());
+    const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, logger);
     const auto hashesDir2 = factoryHashes.ComputeHashes(path_folder_2, logger);
         
     const auto diff = hashesDir1.compare(hashesDir2);

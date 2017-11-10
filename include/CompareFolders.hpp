@@ -26,28 +26,9 @@
 namespace cf
 {
 
-    /// @brief The root of the exception hierarchy
-    class IException : public std::runtime_error
-    {
-    public:
-        /// @brief Constructor
-        /// @param msg Message explaining the origin of the exception
-        IException(const std::string& msg) :
-            std::runtime_error(msg)
-        {   }
-    };
-
-    /// @brief A recoverable exception
-    class ExceptionMinor : public IException
-    {
-    public:
-        /// @brief Constructor
-        /// @param msg Message explaining the origin of the exception
-        ExceptionMinor(const std::string& msg);
-    };
 
     /// @brief A fatal error occured
-    class ExceptionFatal : public IException
+    class ExceptionFatal : public std::runtime_error
     {
     public:
         /// @brief Constructor

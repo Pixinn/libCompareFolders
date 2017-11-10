@@ -41,9 +41,6 @@ namespace cf {
     ///          to give the opportunity to report the errors in real time.
     CCollectionHash CFactoryHashes::ComputeHashes(const fs::path& root, ILogError& logger) const
     {
-         
-        //std::atomic<unsigned> DBG = 0u;
-
         typedef struct resultHash_t{
             fs::path path;
             string hash;
@@ -57,7 +54,7 @@ namespace cf {
 
         for (const auto& path : paths)
         {
-            jobs_scheduled.push_back(async([&root, path/*, &DBG*/]()  -> hash_t
+            jobs_scheduled.push_back(async([&root, path]()  -> hash_t
             {
                 constexpr bool isUpperCase = true;
                 string hash;
@@ -66,12 +63,6 @@ namespace cf {
                     new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
                 );
                 const auto path_relative = fs::relative(path, root);
-
-//                 TEST EXCEPTION
-                //++DBG;
-                //if (DBG % 2 == 0) {
-                //    throw(CryptoPP::Exception{ path.string() });
-                //}
 
                 return hash_t{ path_relative, hash };
             }
@@ -87,7 +78,7 @@ namespace cf {
                 hashes.setHash(result.path, result.hash);
             }
             catch (const CryptoPP::Exception& e) {
-                const string message = string{ "An error occured: " } + e.what();
+                const string message = string{ "Hashing error: " } + e.what();
                 logger.log(message);
             }
         }
@@ -110,8 +101,8 @@ namespace cf {
                 }
             }
         }
-        catch (const std::runtime_error& e) {
-            std::cout << "Error: " << e.what();
+        catch (const fs::filesystem_error& e) {
+            throw(ExceptionFatal{ e.what() });
         }
         return paths;
     }
