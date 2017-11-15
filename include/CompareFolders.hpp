@@ -19,7 +19,7 @@
 #ifndef _SRC_EXCEPTIONS_H__
 #define _SRC_EXCEPTIONS_H__
 
-#include <exception>
+#include <stdexcept>
 #include <list>
 #include <string>
 

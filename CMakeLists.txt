@@ -1,7 +1,7 @@
 # read :    https://de.slideshare.net/DanielPfeifer1/cmake-48475415
 #           https://rix0r.nl/blog/2015/08/13/cmake-guide/
 
-cmake_minimum_required(VERSION 3.4 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.9 FATAL_ERROR) #3.9 required to find boost 1.65
 
 
 project(compare_folders VERSION 0.1 LANGUAGES CXX)
