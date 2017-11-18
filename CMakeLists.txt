@@ -8,6 +8,8 @@ project(compare_folders VERSION 0.1 LANGUAGES CXX)
 
 ### FIND THE LIBRARIES
 
+# threads
+find_package (Threads REQUIRED)
 # boost
 set(BOOST_ROOT $ENV{BOOST_DIR})
 set(Boost_USE_STATIC_LIBS ON)
@@ -42,9 +44,9 @@ add_executable(${PROJECT_NAME}  ${SRC_DIR}/main.cpp)
 ### COMPILER OPTIONS
 
 # common
-set_property(GLOBAL PROPERTY CXX_STANDARD 14)
+set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 set(COMPILE_OPTIONS_MSVC "/W4" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
-set(COMPILE_OPTIONS_UNIX "-Wall" "-std=c++14" "$<$<CONFIG:Release>:-Werror>")
+set(COMPILE_OPTIONS_UNIX "-std=c++11" "-Wall"  "$<$<CONFIG:Release>:-Werror>")
 
 # library
 target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
@@ -95,4 +97,4 @@ else()
 endif()
 
 # application
-target_link_libraries(${PROJECT_NAME} ${LIB_NAME})
+target_link_libraries(${PROJECT_NAME} ${LIB_NAME} ${CMAKE_THREAD_LIBS_INIT})
