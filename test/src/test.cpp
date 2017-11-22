@@ -36,13 +36,12 @@ string Random_String(const unsigned length)
     constexpr array<char, size_charset> charset = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', \
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',\
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
-    auto buffer = new char[len+1];
+    unique_ptr<char[]> buffer{ new char[len + 1] };
     for (auto i = 0u; i < len; ++i) {
         buffer[i] = charset[rand() % size_charset];
     }
     buffer[len] = 0u;
-    string str{ buffer };
-    delete[] buffer;
+    string str{ buffer.get() };
     return str;
 }
 
@@ -77,19 +76,93 @@ list<fs::path> Create_Random_Files(const fs::path folder)
         fs::ofstream stream{ filepath, fs::ofstream::binary };
         constexpr auto max_size_file = 65535u;
         const auto size_file = rand() % max_size_file;
-        auto buffer = new char[size_file];
+        unique_ptr<char[]> buffer{ new char[size_file] };
         for (auto j = 0u; j < size_file; ++j) {
             buffer[j] = rand() % 0xff;
         }
-        stream.write(buffer, size_file);
+        stream.write(buffer.get(), size_file);
+        paths.push_back(filepath);
     }
 
     return paths;
 }
 
+/// @brief  Duplicates the source directory into the destination.
+///         The destination must not pre-exists: it will be created.
+//  from: https://stackoverflow.com/questions/8593608/how-can-i-copy-a-directory-using-boost-filesystem
+bool Copy_Folder(fs::path const & source, fs::path const & destination )
+{
+    try
+    {
+        // Check whether the function call is valid
+        if (
+            !fs::exists(source) ||
+            !fs::is_directory(source)
+            )
+        {
+            std::cerr << "Source directory " << source.string()
+                << " does not exist or is not a directory." << '\n'
+                ;
+            return false;
+        }
+        if (fs::exists(destination))
+        {
+            std::cerr << "Destination directory " << destination.string()
+                << " already exists." << '\n'
+                ;
+            return false;
+        }
+        // Create the destination directory
+        if (!fs::create_directory(destination))
+        {
+            std::cerr << "Unable to create destination directory"
+                << destination.string() << '\n'
+                ;
+            return false;
+        }
+    }
+    catch (fs::filesystem_error const & e)
+    {
+        std::cerr << e.what() << '\n';
+        return false;
+    }
+    // Iterate through the source directory
+    for (
+        fs::directory_iterator file(source);
+        file != fs::directory_iterator(); ++file
+        )
+    {
+        try
+        {
+            fs::path current(file->path());
+            if (fs::is_directory(current))
+            {
+                // Found directory: Recursion
+                if ( !Copy_Folder(current, destination / current.filename() ) )  {
+                    return false;
+                }
+            }
+            else
+            {
+                // Found file: Copy
+                fs::copy_file(
+                    current,
+                    destination / current.filename()
+                );
+            }
+        }
+        catch (fs::filesystem_error const & e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+    }
+    return true;
+}
+
+
 /// @brief Builds a file tree to perform the tests on
 ///        Returns the files that were created
-list<fs::path> Build_Test_Files()
+pair<fs::path, fs::path> Build_Test_Files()
 {
     list<fs::path> files;
 
@@ -103,21 +176,30 @@ list<fs::path> Build_Test_Files()
     srand(static_cast<unsigned>(time(nullptr)));
 
     constexpr uint8_t max_nb_folders = 10u;
-    const unsigned nb_folders = rand() % max_nb_folders;
+    const unsigned nb_folders = (rand() % (max_nb_folders-1))+1;
     for (auto i = 0u; i < nb_folders; ++i) {
         const auto folder = Create_Random_Folder(folder_left);
-        files.merge(Create_Random_Files(folder));
+        auto files_created = Create_Random_Files(folder);
+        files.splice(files.end(), files_created);
     }
 
-    return files;
+    Copy_Folder(folder_left, folder_right);
+
+    return { folder_left, folder_right };
     
+}
+
+
+/// @brief Deletes all the test files
+void CleanUp(const pair<fs::path, fs::path> paths)
+{
+    fs::remove_all(paths.first);
+    fs::remove_all(paths.second);
 }
 
 
 TEST_CASE("NOMINAL")
 {
     const auto files = Build_Test_Files();
-    for (const auto& file : files) {
-        fs::remove(file);
-    }
+    CleanUp(files);
 }
