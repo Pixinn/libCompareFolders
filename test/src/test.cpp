@@ -60,13 +60,13 @@ fs::path Create_Random_Folder(const fs::path parent)
 /// @brief  Creates random files inside the provided folder
 ///         Returns the paths of all created files.
 /// @param  folder Folder to create the files in.
-list<fs::path> Create_Random_Files(const fs::path folder)
+/// @param  max_nb_files Max number of files to create inside the folder (default = 100)
+vector<fs::path> Create_Random_Files(const fs::path folder, const uint8_t max_nb_files = 100u)
 {
-    list<fs::path> paths;
+    vector<fs::path> paths;
     constexpr uint8_t max_len_filename = 20u;
-    constexpr uint8_t max_nb_files = 100u;
 
-    const unsigned nb_files = 10 + (rand() % (max_nb_files-10));
+    const unsigned nb_files = max_nb_files == 1 ? 1 : 1 + (rand() % (max_nb_files-1));
     for (auto i = 0u; i < nb_files; ++i)
     {
         auto filepath = folder / Random_String(rand() % max_len_filename);
@@ -180,7 +180,7 @@ pair<fs::path, fs::path> Build_Test_Files()
     for (auto i = 0u; i < nb_folders; ++i) {
         const auto folder = Create_Random_Folder(folder_left);
         auto files_created = Create_Random_Files(folder);
-        files.splice(files.end(), files_created);
+        files.insert(end(files), begin(files_created), end(files_created));
     }
 
     Copy_Folder(folder_left, folder_right);
@@ -222,7 +222,6 @@ vector<fs::path> Modify_Files(const fs::path & folder)
         stream.seekg(0, stream.beg);
         stream.read(buffer.data(), len);
         buffer.resize(len);
-        auto dbg = stream.gcount();
         const auto position = rand() % len;
         buffer[position] = ~buffer[position];
         stream.seekg(0, stream.beg);
@@ -233,6 +232,36 @@ vector<fs::path> Modify_Files(const fs::path & folder)
 
     return files_modified;
 }
+
+
+/// @brief Adds some files into a folder. Un to 1 level of subfolders
+vector<fs::path> Add_Files(const fs::path& folder)
+{
+    vector<fs::path> files_added;
+
+    // list all subfolders
+    vector<fs::path> subfolders;
+    fs::directory_iterator it{ folder };
+    const auto idx_end = fs::directory_iterator{};
+    while (it != idx_end) {
+        if (fs::is_directory(*it)) {
+            subfolders.push_back(*it);
+        }
+        ++it;
+    }
+    // add files
+    constexpr uint8_t max_nb_files = 10u;
+    const uint8_t nb_files = 1 + (rand() % (max_nb_files - 1));
+    for (auto i = 0u; i < nb_files; ++i) {
+        auto idx = rand() % subfolders.size();
+        auto files = Create_Random_Files(subfolders[idx], 1);
+        files_added.insert(end(files_added), begin(files), end(files));
+    }
+
+    return files_added;
+}
+
+
 
 
 /// @brief Deletes all the test files
@@ -249,12 +278,18 @@ TEST_CASE("NOMINAL")
 {
     // Build files
     const auto folders = Build_Test_Files();
+    
     // Modify some
     auto files_modified = Modify_Files(folders.first);
     auto files_modified_right = Modify_Files(folders.second);
     files_modified.insert(end(files_modified), begin(files_modified_right), end(files_modified_right));
-    // Add files left
-    // Add files right
+    
+    // Add unique files
+    // NOTE:    There is an **extremely** thin chance that the files added left == the files added right.
+    //          Then the test would fail!
+    auto files_unique_left = Add_Files(folders.first);
+    auto files_unique_right = Add_Files(folders.second);
+
     // Rename, move and duplicate
     CleanUp(folders);
 }
