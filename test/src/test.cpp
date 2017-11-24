@@ -66,7 +66,7 @@ list<fs::path> Create_Random_Files(const fs::path folder)
     constexpr uint8_t max_len_filename = 20u;
     constexpr uint8_t max_nb_files = 100u;
 
-    const unsigned nb_files = rand() % max_nb_files;
+    const unsigned nb_files = 10 + (rand() % (max_nb_files-10));
     for (auto i = 0u; i < nb_files; ++i)
     {
         auto filepath = folder / Random_String(rand() % max_len_filename);
@@ -190,16 +190,71 @@ pair<fs::path, fs::path> Build_Test_Files()
 }
 
 
+/// @brief Modify files in the provided folder
+vector<fs::path> Modify_Files(const fs::path & folder)
+{
+    vector<fs::path> files_modified;
+
+    // list all the files
+    vector<fs::path> files;
+    for (const auto& entry : fs::recursive_directory_iterator(folder)) {
+        if (fs::is_regular_file(entry.path())) {
+            files.push_back(entry.path());
+        }
+    }
+
+    // modify random files
+    constexpr unsigned max_nb_files = 10u;
+    const auto nb_files = 1 + (rand() % (max_nb_files - 1));
+    for (auto i = 0u; i < nb_files; ++i)
+    {
+        // find the file
+        auto idx = rand() % files.size();
+        auto file = files[idx];
+        while (find(files_modified.begin(), files_modified.end(), file) != end(files_modified)) { // file already modified
+            idx = rand() % files.size();
+            file = files[idx];
+        }
+        // modify it
+        fs::fstream stream{file, ios::in | ios::out | ios::binary | ios::ate};
+        const auto len = static_cast<int>(stream.tellg());
+        vector<char> buffer(len);
+        stream.seekg(0, stream.beg);
+        stream.read(buffer.data(), len);
+        buffer.resize(len);
+        auto dbg = stream.gcount();
+        const auto position = rand() % len;
+        buffer[position] = ~buffer[position];
+        stream.seekg(0, stream.beg);
+        stream.write(buffer.data(), len);
+
+        files_modified.push_back(file);
+    }
+
+    return files_modified;
+}
+
+
 /// @brief Deletes all the test files
-void CleanUp(const pair<fs::path, fs::path> paths)
+void CleanUp(const pair<fs::path, fs::path> & paths)
 {
     fs::remove_all(paths.first);
     fs::remove_all(paths.second);
 }
 
 
+
+
 TEST_CASE("NOMINAL")
 {
-    const auto files = Build_Test_Files();
-    CleanUp(files);
+    // Build files
+    const auto folders = Build_Test_Files();
+    // Modify some
+    auto files_modified = Modify_Files(folders.first);
+    auto files_modified_right = Modify_Files(folders.second);
+    files_modified.insert(end(files_modified), begin(files_modified_right), end(files_modified_right));
+    // Add files left
+    // Add files right
+    // Rename, move and duplicate
+    CleanUp(folders);
 }
