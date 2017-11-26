@@ -261,6 +261,47 @@ vector<fs::path> Add_Files(const fs::path& folder)
     return files_added;
 }
 
+/// @brief Renames  some random files in the provided folder
+vector<fs::path> Rename_Files(const fs::path& folder)
+{
+    // list files in the folder
+    vector<fs::path> files;
+    fs::recursive_directory_iterator it{ folder };
+    fs::recursive_directory_iterator it_end;
+    while (it != it_end) {
+        if (fs::is_regular_file(*it)) {
+            files.push_back(*it);
+        }
+        ++it;
+    }
+
+    // rename random files
+    vector<fs::path> files_renamed;
+    constexpr auto max_nb_files = 15u;
+    const auto nb_files = 1 + (rand() % (max_nb_files - 1));
+    for (auto i = 0u; i < nb_files; ++i)
+    {
+        auto idx = rand() % files.size();
+        auto& path_file = files[idx];
+        while (find(begin(files_renamed), end(files_renamed), path_file) != end(files_renamed)) {
+            idx = rand() % files.size();
+            path_file = files[idx];
+        }
+        const auto parent = path_file.parent_path();
+        const auto filename_old = path_file.filename();
+        auto filename_new = Random_String(20u);
+        while (filename_new == filename_old.string()) {
+            filename_new = Random_String(20u);
+        }
+        const auto path_new = parent / filename_new;
+        fs::rename(path_file, path_new);
+        path_file = path_new;
+        files_renamed.push_back(path_file);
+    }
+
+    return files_renamed;
+}
+
 
 
 
@@ -290,6 +331,7 @@ TEST_CASE("NOMINAL")
     auto files_unique_left = Add_Files(folders.first);
     auto files_unique_right = Add_Files(folders.second);
 
-    // Rename, move and duplicate
+    // Rename, move
+    auto files_renamed = Rename_Files(folders.first);
     CleanUp(folders);
 }
