@@ -34,11 +34,11 @@ using namespace std;
 
 
 
-constexpr unsigned MAX_NB_FOLDERS = 5u;
-constexpr unsigned MAX_NB_FILES_PER_FOLDER = 10u;
-constexpr unsigned MAX_NB_FILES_TO_MODIFY = 5u;
-constexpr unsigned MAX_NB_FILES_TO_ADD = 5u;
-constexpr unsigned MAX_NB_FILES_TO_RENAME = 5u;
+constexpr unsigned MAX_NB_FOLDERS = 10u;
+constexpr unsigned MAX_NB_FILES_PER_FOLDER = 100u;
+constexpr unsigned MAX_NB_FILES_TO_MODIFY = 10u;
+constexpr unsigned MAX_NB_FILES_TO_ADD = 10u;
+constexpr unsigned MAX_NB_FILES_TO_RENAME = 10u;
 
 
 static pair<fs::path, fs::path> Folders;
@@ -65,7 +65,7 @@ list<fs::path> Get_Identical_Files()
 string Random_String(const unsigned length)
 {
     const auto len = (1 + length) & 0xFF;
-    constexpr auto size_charset = 66u;
+    constexpr auto size_charset = 62u;;
     constexpr array<char, size_charset> charset = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', \
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',\
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
@@ -83,7 +83,7 @@ string Random_String(const unsigned length)
 fs::path Create_Random_Folder(const fs::path parent)
 {
     constexpr uint8_t max_len_name = 20u;
-    const auto name = parent / Random_String(rand() % max_len_name);
+    const auto name = parent / Random_String(1 + (rand() % (max_len_name-1)));
     if (!fs::exists(name) && !fs::create_directory(name)) {
         throw runtime_error{ "Cannot create folder " + name.string() };
     }
@@ -98,6 +98,8 @@ vector<fs::path> Create_Random_Files(const fs::path folder, const uint8_t max_nb
 {
     vector<fs::path> paths;
     constexpr uint8_t max_len_filename = 20u;
+
+    const auto parent = folder.parent_path();
 
     const unsigned nb_files = max_nb_files == 1 ? 1 : 1 + (rand() % (max_nb_files-1));
     for (auto i = 0u; i < nb_files; ++i)
@@ -114,7 +116,7 @@ vector<fs::path> Create_Random_Files(const fs::path folder, const uint8_t max_nb
             buffer[j] = rand() % 0xff;
         }
         stream.write(buffer.get(), size_file);
-        paths.push_back(filepath);
+        paths.push_back(fs::relative(filepath, parent));
     }
 
     return paths;
@@ -286,30 +288,19 @@ vector<fs::path> Add_Files(const fs::path& folder)
 }
 
 /// @brief Renames  some random files in the provided folder
-vector<fs::path> Rename_Files(const fs::path& folder)
+vector<fs::path> Rename_Files(const fs::path& folder, list<fs::path>& files_identical)
 {
-    // list files in the folder
-    vector<fs::path> files;
-    fs::recursive_directory_iterator it{ folder };
-    fs::recursive_directory_iterator it_end;
-    while (it != it_end) {
-        if (fs::is_regular_file(*it)) {
-            files.push_back(*it);
-        }
-        ++it;
-    }
+    vector<fs::path> files_renamed;
 
     // rename random files
-    vector<fs::path> files_renamed;
     const auto nb_files = 1 + (rand() % (MAX_NB_FILES_TO_RENAME - 1));
-    for (auto i = 0u; i < nb_files; ++i)
+    for (auto i = 0u; i < nb_files && !files_identical.empty(); ++i)
     {
-        auto idx = rand() % files.size();
-        auto& path_file = files[idx];
-        while (find(begin(files_renamed), end(files_renamed), path_file) != end(files_renamed)) {
-            idx = rand() % files.size();
-            path_file = files[idx];
-        }
+        auto idx = rand() % files_identical.size();
+        auto it = begin(files_identical);
+        for (auto j = 0u; j < idx; ++j) { ++it; }
+        auto path_file = folder / *it;
+        files_identical.erase(it);
         const auto parent = path_file.parent_path();
         const auto filename_old = path_file.filename();
         auto filename_new = Random_String(20u);
@@ -318,8 +309,7 @@ vector<fs::path> Rename_Files(const fs::path& folder)
         }
         const auto path_new = parent / filename_new;
         fs::rename(path_file, path_new);
-        path_file = path_new;
-        files_renamed.push_back(path_file);
+        files_renamed.push_back(fs::relative(path_new, folder));
     }
 
     return files_renamed;
@@ -354,7 +344,7 @@ TEST_CASE("NOMINAL")
     auto files_unique_right = Add_Files(Folders.second);
 
     // Rename
-    auto files_renamed = Rename_Files(Folders.first);
+    auto files_renamed = Rename_Files(Folders.first, files_identical);
 
     // Compare
     const auto diff = cf::CompareFolders(Folders.first.string(), Folders.second.string());
@@ -364,6 +354,23 @@ TEST_CASE("NOMINAL")
     for (auto& entry : diff.identical) {
         REQUIRE(find(begin(files_identical), end(files_identical), entry) != end(files_identical));
     }
+    REQUIRE(diff.different.size() == files_modified.size());
+    for (auto& entry : diff.different) {
+        REQUIRE(find(begin(files_modified), end(files_modified), entry) != end(files_modified));
+    }
+    REQUIRE(diff.unique_left.size() == files_unique_left.size());
+    for (auto& entry : diff.unique_left) {
+        REQUIRE(find(begin(files_unique_left), end(files_unique_left), entry) != end(files_unique_left));
+    }
+    REQUIRE(diff.unique_right.size() == files_unique_right.size());
+    for (auto& entry : diff.unique_right) {
+        REQUIRE(find(begin(files_unique_right), end(files_unique_right), entry) != end(files_unique_right));
+    }
+    REQUIRE(diff.renamed.size() == files_renamed.size());
+    for (auto& entry : diff.renamed) {
+        REQUIRE(find(begin(files_renamed), end(files_renamed), *begin(entry.left)) != end(files_renamed)); // Works because file were renamed in LEFT and there was no duplication
+    }
+
    
 }
 
