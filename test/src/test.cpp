@@ -22,11 +22,44 @@
 #include <array>
 #include <boost\filesystem.hpp>
 
-#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+#define CATCH_CONFIG_RUNNER
 #include "catch.hpp"
+
+#include "CompareFolders.hpp"
+
+
 
 namespace fs = boost::filesystem;
 using namespace std;
+
+
+
+constexpr unsigned MAX_NB_FOLDERS = 5u;
+constexpr unsigned MAX_NB_FILES_PER_FOLDER = 10u;
+constexpr unsigned MAX_NB_FILES_TO_MODIFY = 5u;
+constexpr unsigned MAX_NB_FILES_TO_ADD = 5u;
+constexpr unsigned MAX_NB_FILES_TO_RENAME = 5u;
+
+
+static pair<fs::path, fs::path> Folders;
+
+
+/// @rbrief returns the identical files
+list<fs::path> Get_Identical_Files()
+{
+    list<fs::path> identical;
+    
+    fs::recursive_directory_iterator it{ Folders.first };
+    fs::recursive_directory_iterator it_end;
+    while (it != it_end) {
+        if (fs::is_regular_file(*it)) {
+            identical.push_back(fs::relative(*it, Folders.first));
+        }
+        ++it;
+    }
+    
+    return identical;
+}
 
 /// @brief Returns a random string
 string Random_String(const unsigned length)
@@ -61,7 +94,7 @@ fs::path Create_Random_Folder(const fs::path parent)
 ///         Returns the paths of all created files.
 /// @param  folder Folder to create the files in.
 /// @param  max_nb_files Max number of files to create inside the folder (default = 100)
-vector<fs::path> Create_Random_Files(const fs::path folder, const uint8_t max_nb_files = 100u)
+vector<fs::path> Create_Random_Files(const fs::path folder, const uint8_t max_nb_files = MAX_NB_FILES_PER_FOLDER)
 {
     vector<fs::path> paths;
     constexpr uint8_t max_len_filename = 20u;
@@ -175,8 +208,7 @@ pair<fs::path, fs::path> Build_Test_Files()
 
     srand(static_cast<unsigned>(time(nullptr)));
 
-    constexpr uint8_t max_nb_folders = 10u;
-    const unsigned nb_folders = (rand() % (max_nb_folders-1))+1;
+    const unsigned nb_folders = (rand() % (MAX_NB_FOLDERS -1))+1;
     for (auto i = 0u; i < nb_folders; ++i) {
         const auto folder = Create_Random_Folder(folder_left);
         auto files_created = Create_Random_Files(folder);
@@ -190,33 +222,24 @@ pair<fs::path, fs::path> Build_Test_Files()
 }
 
 
-/// @brief Modify files in the provided folder
-vector<fs::path> Modify_Files(const fs::path & folder)
+/// @brief Modifies some "identical' files in the provided folder then remove them from the list.
+///        Returns a vector of the modified files
+vector<fs::path> Modify_Files(const fs::path & folder, list<fs::path>& files_identical)
 {
     vector<fs::path> files_modified;
 
-    // list all the files
-    vector<fs::path> files;
-    for (const auto& entry : fs::recursive_directory_iterator(folder)) {
-        if (fs::is_regular_file(entry.path())) {
-            files.push_back(entry.path());
-        }
-    }
-
     // modify random files
-    constexpr unsigned max_nb_files = 10u;
-    const auto nb_files = 1 + (rand() % (max_nb_files - 1));
+    const auto nb_files = min(1 + (rand() % (MAX_NB_FILES_TO_MODIFY - 1)), files_identical.size());
     for (auto i = 0u; i < nb_files; ++i)
     {
         // find the file
-        auto idx = rand() % files.size();
-        auto file = files[idx];
-        while (find(files_modified.begin(), files_modified.end(), file) != end(files_modified)) { // file already modified
-            idx = rand() % files.size();
-            file = files[idx];
-        }
+        auto idx = rand() % files_identical.size();
+        auto it = begin(files_identical);
+        for (auto j = 0u; j < idx; ++j) { ++it;  }
+        auto file = *it;
+
         // modify it
-        fs::fstream stream{file, ios::in | ios::out | ios::binary | ios::ate};
+        fs::fstream stream{ folder / file, ios::in | ios::out | ios::binary | ios::ate};
         const auto len = static_cast<int>(stream.tellg());
         vector<char> buffer(len);
         stream.seekg(0, stream.beg);
@@ -226,6 +249,8 @@ vector<fs::path> Modify_Files(const fs::path & folder)
         buffer[position] = ~buffer[position];
         stream.seekg(0, stream.beg);
         stream.write(buffer.data(), len);
+
+        files_identical.erase(it);
 
         files_modified.push_back(file);
     }
@@ -250,8 +275,7 @@ vector<fs::path> Add_Files(const fs::path& folder)
         ++it;
     }
     // add files
-    constexpr uint8_t max_nb_files = 10u;
-    const uint8_t nb_files = 1 + (rand() % (max_nb_files - 1));
+    const uint8_t nb_files = 1 + (rand() % (MAX_NB_FILES_TO_ADD - 1));
     for (auto i = 0u; i < nb_files; ++i) {
         auto idx = rand() % subfolders.size();
         auto files = Create_Random_Files(subfolders[idx], 1);
@@ -277,8 +301,7 @@ vector<fs::path> Rename_Files(const fs::path& folder)
 
     // rename random files
     vector<fs::path> files_renamed;
-    constexpr auto max_nb_files = 15u;
-    const auto nb_files = 1 + (rand() % (max_nb_files - 1));
+    const auto nb_files = 1 + (rand() % (MAX_NB_FILES_TO_RENAME - 1));
     for (auto i = 0u; i < nb_files; ++i)
     {
         auto idx = rand() % files.size();
@@ -314,24 +337,49 @@ void CleanUp(const pair<fs::path, fs::path> & paths)
 
 
 
-
 TEST_CASE("NOMINAL")
 {
-    // Build files
-    const auto folders = Build_Test_Files();
-    
+    // Get the identical files list
+    auto files_identical = Get_Identical_Files();
+
     // Modify some
-    auto files_modified = Modify_Files(folders.first);
-    auto files_modified_right = Modify_Files(folders.second);
+    auto files_modified = Modify_Files(Folders.first, files_identical);
+    auto files_modified_right = Modify_Files(Folders.second, files_identical);
     files_modified.insert(end(files_modified), begin(files_modified_right), end(files_modified_right));
     
     // Add unique files
     // NOTE:    There is an **extremely** thin chance that the files added left == the files added right.
     //          Then the test would fail!
-    auto files_unique_left = Add_Files(folders.first);
-    auto files_unique_right = Add_Files(folders.second);
+    auto files_unique_left = Add_Files(Folders.first);
+    auto files_unique_right = Add_Files(Folders.second);
 
-    // Rename, move
-    auto files_renamed = Rename_Files(folders.first);
-    CleanUp(folders);
+    // Rename
+    auto files_renamed = Rename_Files(Folders.first);
+
+    // Compare
+    const auto diff = cf::CompareFolders(Folders.first.string(), Folders.second.string());
+
+    // Check results
+    REQUIRE(diff.identical.size() == files_identical.size());
+    for (auto& entry : diff.identical) {
+        REQUIRE(find(begin(files_identical), end(files_identical), entry) != end(files_identical));
+    }
+   
+}
+
+
+
+
+
+int main(int argc, char* argv[]) {
+    
+    // global setup...
+    Folders = Build_Test_Files();
+
+    int result = Catch::Session().run(argc, argv);
+
+    // global clean-up...
+    CleanUp(Folders);
+
+    return result;
 }
