@@ -98,3 +98,8 @@ endif()
 
 # application
 target_link_libraries(${PROJECT_NAME} ${LIB_NAME} ${CMAKE_THREAD_LIBS_INIT})
+
+### TEST
+add_subdirectory(test)
+
+
