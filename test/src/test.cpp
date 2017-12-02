@@ -51,7 +51,7 @@ list<fs::path> Get_Identical_Files()
     
     fs::recursive_directory_iterator it{ Folders.first };
     fs::recursive_directory_iterator it_end;
-    while (it != it_end) {
+    while (it != it_end) { 
         if (fs::is_regular_file(*it)) {
             identical.push_back(fs::relative(*it, Folders.first));
         }
@@ -323,6 +323,30 @@ void CleanUp(const pair<fs::path, fs::path> & paths)
 {
     fs::remove_all(paths.first);
     fs::remove_all(paths.second);
+}
+
+
+TEST_CASE("BAD FOLDER TO COMPARE")
+{
+    const auto folder_random = Random_String(20u) + Random_String(20u) + Random_String(20u);
+    bool bad_left_folder = false;
+    bool bad_right_foldder = false;
+
+    try {
+        cf::CompareFolders(".", folder_random);
+    }
+    catch (const cf::ExceptionFatal&) {
+        bad_right_foldder = true;
+    }
+    REQUIRE(bad_right_foldder == true);
+
+    try {
+        cf::CompareFolders(folder_random, ".");
+    }
+    catch (const cf::ExceptionFatal&) {
+        bad_left_folder = true;
+    }
+    REQUIRE(bad_left_folder == true);
 }
 
 
