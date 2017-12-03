@@ -45,6 +45,9 @@ namespace  cf {
         
         /// @brief Adds a hash corresponding to a given path
         void setHash(const fs::path& path, const std::string& hash);
+
+        /// @brief Exports the hashes as a JSON string
+        std::string json() const;
         
         /// @brief Removes the path from the collection
         void removePath(const fs::path& path);

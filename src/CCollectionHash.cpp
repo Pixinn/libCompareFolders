@@ -15,12 +15,17 @@
 16  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 17 */
 
+#include <sstream>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include "CCollectionHash.hpp"
 
 
 using namespace std;
+namespace pt = boost::property_tree;
+
 
 
 namespace  cf
@@ -156,7 +161,26 @@ namespace  cf
             list_renamed
         };
     }
-    
+
+
+    string CCollectionHash::json() const
+    {
+        pt::ptree root;
+        root.put("Generator", "info.xtof.COMPARE_FOLDERS");
+
+        pt::ptree node_hashes;
+        for (const auto& entry : _file_hashes) {
+            pt::ptree node_entry;
+            node_entry.put(entry.first.string(), entry.second);
+            node_hashes.push_back(make_pair("", node_entry));
+        }
+        root.add_child("hashes", node_hashes);
+
+        // Get the string and returns
+        stringstream stream{ ios_base::out };
+        pt::write_json(stream, root);
+        return stream.str();
+    }
     
     
     ///////////////////////

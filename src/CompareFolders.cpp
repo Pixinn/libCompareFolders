@@ -69,5 +69,6 @@ diff_t cf::CompareFolders(const std::string& root_left, const std::string root_r
         
     const auto diff = hashesDir1.compare(hashesDir2);
 
+
     return diff;
 }
