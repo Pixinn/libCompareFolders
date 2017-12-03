@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <list>
 #include <array>
+
 #include <boost\filesystem.hpp>
 
 #define CATCH_CONFIG_RUNNER

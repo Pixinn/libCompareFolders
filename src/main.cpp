@@ -21,11 +21,14 @@
 #include <list>
 #include <string>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+
 #include "CompareFolders.hpp"
 
 
 using namespace std;
-
+namespace pt = boost::property_tree;
 
 
 /// @Brief custom error "live" logger
@@ -38,6 +41,75 @@ public:
 };
 
 
+/// @brief Converts the diff structure to a JSON string
+pt::ptree Diff2Json(const cf::diff_t& diff)
+{
+    pt::ptree root;
+    root.put("Generator", "info.xtof.COMPARE_FOLDERS");
+    
+    // identical files
+    pt::ptree node_identical;
+    for (const auto& entry : diff.identical) {
+        pt::ptree node_entry;
+        node_entry.put("", entry);
+        node_identical.push_back(make_pair("", node_entry));
+    }
+    root.add_child("identical", node_identical);
+
+    // different files
+    pt::ptree node_different;
+    for (const auto& entry : diff.different) {
+        pt::ptree node_entry;
+        node_entry.put("", entry);
+        node_different.push_back(make_pair("", node_entry));
+    }
+    root.add_child("different", node_different);
+
+    // files unique to the left
+    pt::ptree node_unique_left;
+    for (const auto& entry : diff.unique_left) {
+        pt::ptree node_entry;
+        node_entry.put("", entry);
+        node_unique_left.push_back(make_pair("", node_entry));
+    }
+    root.add_child("unique left", node_unique_left);
+
+    // files unique to the right
+    pt::ptree node_unique_right;
+    for (const auto& entry : diff.unique_right) {
+        pt::ptree node_entry;
+        node_entry.put("", entry);
+        node_unique_right.push_back(make_pair("", node_entry));
+    }
+    root.add_child("unique right", node_unique_right);
+
+    // renamed and duplicates
+    pt::ptree renamed;
+    for (const auto& entry : diff.renamed)
+    {
+        pt::ptree left;
+        for (const auto& entry_left : entry.left) {
+            pt::ptree node_entry;
+            node_entry.put("", entry_left);
+            left.push_back(make_pair("", node_entry));
+        }
+        renamed.push_back(make_pair("left", left));
+
+        pt::ptree right;
+        for (const auto& entry_right : entry.right) {
+            pt::ptree node_entry;
+            node_entry.put("", entry_right);
+            right.push_back(make_pair("", node_entry));
+        }
+        renamed.push_back(make_pair("right", right));
+    }
+    root.add_child("renamed and duplicates", renamed);
+
+    return root;
+}
+
+
+/// @brief Compares the content of two folders and displays the result as JSON
 int main(int argc, char* argv[])
 {
 	// Sanity
@@ -56,44 +128,10 @@ int main(int argc, char* argv[])
         
         LogError logErr;
         const auto diff = cf::CompareFolders(path_folder_1, path_folder_2, logErr);
-
-        // ++++++++++ display result
-        cout << diff.identical.size() << " files are identical:\n\n";
-        for(const auto& file : diff.identical) {
-            cout << '\"' << file << "\"\n";
-        }
-        cout << "\n====\n\n";
+        const auto json = Diff2Json(diff);
         
-        cout << diff.different.size() << " files are different:\n\n";
-        for(const auto& file : diff.different) {
-            cout << '\"' << file << "\"\n";
-        }
-        cout << "\n====\n\n";
-        
-        cout << diff.unique_left.size() << " files are unique to \"" << diff.root_left << "\":\n\n";
-        for(const auto& file : diff.unique_left) {
-            cout << '\"' << file << "\"\n";
-        }
-        cout << "\n====\n\n";
-        
-        cout << diff.unique_right.size() << " files are unique to \"" << diff.root_right << "\":\n\n";
-        for(const auto& file : diff.unique_right) {
-            cout << '\"' << file << "\"\n";;
-        }
-        cout << "\n====\n\n";
-        
-        cout << diff.renamed.size() << " files with identical content but different name/location:\n";
-        for(const auto& files : diff.renamed) {
-            cout << "\n---\n";
-            for(const auto renamed : files.left) {
-                cout << '\"' << diff.root_left << renamed << "\"\n";
-            }
-            for(const auto renamed : files.right) {
-                cout << " -> \t\"" << diff.root_right  << renamed << "\"\n";
-            }
-        }
-        cout << endl;
-        // ---------- display
+        // Displaying the result
+        pt::write_json(cout, json);
 
     }
     catch (const exception& e)
