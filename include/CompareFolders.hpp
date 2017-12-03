@@ -88,6 +88,10 @@ namespace cf
     /// @details Returns the differences between the two folders. Files can be identical or unique.
     ///          Identical files but with a different names are also detected.
     diff_t CompareFolders(const std::string& left, const std::string right, ILogError& logErrors = SLogErrorNull::GetInstance());
+
+    /// @brief Produces a JSON string
+    /// @param diff Difference between two folders
+    std::string Json(const diff_t diff);
 }
 
 #endif

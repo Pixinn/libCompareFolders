@@ -21,15 +21,11 @@
 #include <list>
 #include <string>
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
 #include "CompareFolders.hpp"
 
 
 using namespace std;
-namespace pt = boost::property_tree;
-
 
 /// @Brief custom error "live" logger
 class LogError : public cf::ILogError
@@ -41,72 +37,7 @@ public:
 };
 
 
-/// @brief Converts the diff structure to a JSON string
-pt::ptree Diff2Json(const cf::diff_t& diff)
-{
-    pt::ptree root;
-    root.put("Generator", "info.xtof.COMPARE_FOLDERS");
-    
-    // identical files
-    pt::ptree node_identical;
-    for (const auto& entry : diff.identical) {
-        pt::ptree node_entry;
-        node_entry.put("", entry);
-        node_identical.push_back(make_pair("", node_entry));
-    }
-    root.add_child("identical", node_identical);
 
-    // different files
-    pt::ptree node_different;
-    for (const auto& entry : diff.different) {
-        pt::ptree node_entry;
-        node_entry.put("", entry);
-        node_different.push_back(make_pair("", node_entry));
-    }
-    root.add_child("different", node_different);
-
-    // files unique to the left
-    pt::ptree node_unique_left;
-    for (const auto& entry : diff.unique_left) {
-        pt::ptree node_entry;
-        node_entry.put("", entry);
-        node_unique_left.push_back(make_pair("", node_entry));
-    }
-    root.add_child("unique left", node_unique_left);
-
-    // files unique to the right
-    pt::ptree node_unique_right;
-    for (const auto& entry : diff.unique_right) {
-        pt::ptree node_entry;
-        node_entry.put("", entry);
-        node_unique_right.push_back(make_pair("", node_entry));
-    }
-    root.add_child("unique right", node_unique_right);
-
-    // renamed and duplicates
-    pt::ptree renamed;
-    for (const auto& entry : diff.renamed)
-    {
-        pt::ptree left;
-        for (const auto& entry_left : entry.left) {
-            pt::ptree node_entry;
-            node_entry.put("", entry_left);
-            left.push_back(make_pair("", node_entry));
-        }
-        renamed.push_back(make_pair("left", left));
-
-        pt::ptree right;
-        for (const auto& entry_right : entry.right) {
-            pt::ptree node_entry;
-            node_entry.put("", entry_right);
-            right.push_back(make_pair("", node_entry));
-        }
-        renamed.push_back(make_pair("right", right));
-    }
-    root.add_child("renamed and duplicates", renamed);
-
-    return root;
-}
 
 
 /// @brief Compares the content of two folders and displays the result as JSON
@@ -128,10 +59,9 @@ int main(int argc, char* argv[])
         
         LogError logErr;
         const auto diff = cf::CompareFolders(path_folder_1, path_folder_2, logErr);
-        const auto json = Diff2Json(diff);
         
         // Displaying the result
-        pt::write_json(cout, json);
+        cout << cf::Json(diff);
 
     }
     catch (const exception& e)

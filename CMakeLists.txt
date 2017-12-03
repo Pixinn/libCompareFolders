@@ -34,6 +34,7 @@ add_library(${LIB_NAME} ${SRC_DIR}/CCollectionHash.hpp
                         ${SRC_DIR}/CFactoryHashes.hpp
                         ${SRC_DIR}/CFactoryHashes.cpp
 						${SRC_DIR}/CompareFolders.cpp
+                        ${SRC_DIR}/Utilities.cpp
                         ${INCLUDE_DIR}/CompareFolders.hpp)
 
 
