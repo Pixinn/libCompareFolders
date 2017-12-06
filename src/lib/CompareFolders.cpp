@@ -72,3 +72,12 @@ diff_t cf::CompareFolders(const std::string& root_left, const std::string root_r
 
     return diff;
 }
+
+
+string cf::ScanFolder(const string& path, ILogError& logger)
+{
+    const auto folder = path_folder(path);
+    const cf::CFactoryHashes factoryHashes{};
+    const auto properties = factoryHashes.ComputeHashes(folder, logger);
+    return properties.json();
+}

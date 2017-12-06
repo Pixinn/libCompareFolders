@@ -170,9 +170,7 @@ namespace  cf
 
         pt::ptree node_hashes;
         for (const auto& entry : _file_hashes) {
-            pt::ptree node_entry;
-            node_entry.put(entry.first.string(), entry.second);
-            node_hashes.push_back(make_pair("", node_entry));
+            node_hashes.push_back(pt::ptree::value_type(entry.first.string(), entry.second)); // not using "put()" as '.' is its delimiter
         }
         root.add_child("hashes", node_hashes);
 
@@ -183,15 +181,5 @@ namespace  cf
     }
     
     
-    ///////////////////////
-    
-    string CCollectionHash::toString() const
-    {
-        string str;
-        for(auto it = _file_hashes.begin(); it != _file_hashes.end(); ++it) {
-            str += it->first.string() + " : " + it->second + "\n";
-        }
-        return str;
-    }
 
 }

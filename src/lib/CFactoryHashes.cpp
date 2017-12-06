@@ -42,8 +42,9 @@ namespace cf {
     CCollectionHash CFactoryHashes::ComputeHashes(const fs::path& root, ILogError& logger) const
     {
         typedef struct resultHash_t{
-            fs::path path;
-            string hash;
+            fs::path path;          ///< filepath
+            string hash;            ///< hash of the file
+            time_t time_modified;   ///< time of last modification 
         } hash_t;
 
         // Scheduling jobs to compute hashes
@@ -63,8 +64,9 @@ namespace cf {
                     new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
                 );
                 const auto path_relative = fs::relative(path, root);
+                const auto time_modified = fs::last_write_time(path);
 
-                return hash_t{ path_relative, hash };
+                return hash_t{ path_relative, hash, time_modified };
             }
             ));
         }

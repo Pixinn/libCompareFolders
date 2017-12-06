@@ -89,9 +89,13 @@ namespace cf
     ///          Identical files but with a different names are also detected.
     diff_t CompareFolders(const std::string& left, const std::string right, ILogError& logErrors = SLogErrorNull::GetInstance());
 
-    /// @brief Produces a JSON string
+    /// @brief Produces a JSON string with the difference between two folders
     /// @param diff Difference between two folders
     std::string Json(const diff_t diff);
+
+    /// @brief Analyzes the content of a folder and returns a JSON string
+    /// @param path Path of the folder to be analyzed
+    std::string ScanFolder(const std::string& path, ILogError& logErrors = SLogErrorNull::GetInstance());
 }
 
 #endif
