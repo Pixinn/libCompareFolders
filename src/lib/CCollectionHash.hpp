@@ -36,11 +36,16 @@ namespace  cf {
     class CCollectionHash
     {
     public:
-        /// @brief Constructor
+        /// @brief Constructor from a given path
         /// @param root Root folder containing the hashed files
-        CCollectionHash(const fs::path& root) :
+        CCollectionHash(const fs::path& root) noexcept :
             _root{ root }
         {   }
+        /// @brief Constructor from a given JSON file
+        /// @param json Collection in the JSON format
+        /// @detailed Constructs the collection from a JSON formatted string describing its content.
+        CCollectionHash(const std::string& json) noexcept;
+
         ~CCollectionHash() = default;
         
         /// @brief Adds a hash corresponding to a given path

@@ -21,6 +21,7 @@
 #include <list>
 #include <string>
 
+#include <tclap/CmdLine.h>
 
 #include "CompareFolders.hpp"
 
@@ -43,31 +44,57 @@ public:
 /// @brief Compares the content of two folders and displays the result as JSON
 int main(int argc, char* argv[])
 {
-	// Sanity
-	if (argc != 3) {
-        cout << "Usage: " << argv[0] << " [DIRECTORY_1] [DIRECTORY_2]" << endl;
-		return -1;
-	}
+    try
+    {
+        // Parsing args
+        TCLAP::CmdLine cmd{ "Compares the content of two folders" };
+        TCLAP::MultiArg<string> folders("f", "folder", "An actual folder to be compared", true, "path"); // at least one folder must be provided
+        TCLAP::ValueArg<string> json("j", "json", "A JSON file containing the descrition of a preiously scanned folder", false, "", "Filepath");
+        cmd.add(folders);
+        cmd.add(json);
+        cmd.parse(argc, argv);
+        const auto path_folders = folders.getValue();
+        const auto path_json = json.getValue();
 
-    // Parse args
-    const string path_folder_1{ argv[1] };
-    const string path_folder_2{ argv[2] };
+        // Sanity
+        if (path_folders.size() > 2u) {
+            throw(TCLAP::ArgException{ "No more than two folders can be given as input."});
+        }
+        else if (path_folders.size() == 2u && path_json.length() != 0) {
+            throw(TCLAP::ArgException{"You cannot compare the JSON content with more than one folder."});
+        }
 
-    cout << "\nCOMPARING\n" << '\"' << path_folder_1 << "\"\nand\n\"" << path_folder_2 << "\"\n" << endl;
-    
-    try {
-        
+        // Execute       
         LogError logErr;
-        const auto diff = cf::CompareFolders(path_folder_1, path_folder_2, logErr);
-        
-        // Displaying the result
-        cout << cf::Json(diff);
+        if (path_folders.size() == 2u) // Compare two folders
+        {
+            cout << "\nCOMPARING\n\n" << '\"' << path_folders[0] << "\"\n\tand\n\"" << path_folders[1] << "\"\n" << endl;
+            const auto diff = cf::CompareFolders(path_folders[0], path_folders[1], logErr);
+            cout << cf::Json(diff);
+        }
 
+        else if (path_folders.size() == 1)
+        {
+            if (path_json.length() != 0) // Compare a folder with a JSON
+            {
+
+            }
+            else {  // Analyse the content of the folder
+
+            }
+        }
+    }
+    catch (TCLAP::ArgException &e)  // catch any exceptions
+    {
+        std::cerr << "error: " << e.error() << std::endl;
+        return -1;
     }
     catch (const exception& e)
     {
         cout << e.what() << endl;
+        return -1;
     }
 
-	return 0;
+    return 0;
+
 }

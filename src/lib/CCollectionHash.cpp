@@ -33,7 +33,28 @@ namespace  cf
     
     ///////////////////////
 
-    void CCollectionHash::setHash(const boost::filesystem::path& path, const string& hash)
+    CCollectionHash::CCollectionHash(const string& json) noexcept
+    {
+        pt::ptree root;
+        stringstream stream{ json, ios_base::in };
+        pt::read_json(stream, root);
+
+        // TODO         Check the generator
+        // UNIT_TEST    Bad generator
+
+        const auto& mutable_root = _root;
+        const_cast<fs::path&>(mutable_root) = fs::path{ root.get<string>("root") };
+
+        for (const auto& file : root.get_child("files")) {
+            setHash(fs::path{ file.first }, file.second.data());
+        }
+
+    }
+
+
+    ///////////////////////
+
+    void CCollectionHash::setHash(const fs::path& path, const string& hash)
     {        
         // Is it the first time a hash is provided for this file?
         {
@@ -167,12 +188,12 @@ namespace  cf
     {
         pt::ptree root;
         root.put("Generator", "info.xtof.COMPARE_FOLDERS");
-
+        root.put("root", _root);
         pt::ptree node_hashes;
         for (const auto& entry : _file_hashes) {
             node_hashes.push_back(pt::ptree::value_type(entry.first.string(), entry.second)); // not using "put()" as '.' is its delimiter
         }
-        root.add_child("hashes", node_hashes);
+        root.add_child("files", node_hashes);
 
         // Get the string and returns
         stringstream stream{ ios_base::out };
