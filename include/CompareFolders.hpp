@@ -59,6 +59,14 @@ namespace cf
         static SLogErrorNull _Instance;
     };
 
+    /// @brief JSON file
+    typedef struct json_t {
+        json_t(const std::string& p_path) :
+            path{ p_path }
+        {   }
+        const std::string path;
+    } json_t;
+
 
     /// @brief Holds the differences between two folders named *left* and *right*
     typedef struct diff_t
@@ -85,9 +93,24 @@ namespace cf
     /// @param left First folder's path
     /// @param right Second folder's path
     /// @param logErrors A logger to catch minor errors that could happen. By default, the NULL logger will ignore them.
-    /// @details Returns the differences between the two folders. Files can be identical or unique.
+    /// @details Returns the differences between the two folders.
     ///          Identical files but with a different names are also detected.
-    diff_t CompareFolders(const std::string& left, const std::string right, ILogError& logErrors = SLogErrorNull::GetInstance());
+    diff_t CompareFolders(const std::string& left, const std::string& right, ILogError& logErrors = SLogErrorNull::GetInstance());
+
+    /// @brief Compares the content of two JSON files
+    /// @param left First JSON file
+    /// @param right Second JSON file
+    /// @details Returns the differences between the content described by the JSON files.
+    ///          Identical files but with a different names are also detected.
+    diff_t CompareFolders(const json_t left, const json_t right);
+
+    /// @brief Compares the content of two JSON files
+    /// @param folder The folder path
+    /// @param json The JSON file
+    /// @param logErrors A logger to catch minor errors that could happen. By default, the NULL logger will ignore them.
+    /// @details Returns the differences between the content described by the JSON files.
+    ///          Identical files but with a different names are also detected.
+    diff_t CompareFolders(const std::string& folder, const json_t json, ILogError& logErrors = SLogErrorNull::GetInstance());
 
     /// @brief Produces a JSON string with the difference between two folders
     /// @param diff Difference between two folders

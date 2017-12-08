@@ -40,6 +40,7 @@ namespace  cf
         pt::read_json(stream, root);
 
         // TODO         Check the generator
+        // UNIT_TEST    File that is not a JSON
         // UNIT_TEST    Bad generator
 
         const auto& mutable_root = _root;

@@ -56,7 +56,7 @@ inline const fs::path path_folder(const string str_path)
 // ===== PUBLIC FUNCTIONS
 
 
-diff_t cf::CompareFolders(const std::string& root_left, const std::string root_right, ILogError& logger)
+diff_t cf::CompareFolders(const std::string& root_left, const std::string& root_right, ILogError& logger)
 {
     const auto path_folder_1 = path_folder(root_left);
     const auto path_folder_2 = path_folder(root_right);
@@ -69,6 +69,33 @@ diff_t cf::CompareFolders(const std::string& root_left, const std::string root_r
         
     const auto diff = hashesDir1.compare(hashesDir2);
 
+    return diff;
+}
+
+
+diff_t cf::CompareFolders(const json_t left, const json_t right)
+{
+    const CCollectionHash hashesDir1{ right.path };
+    const CCollectionHash hashesDir2{ right.path };
+
+    const auto diff = hashesDir1.compare(hashesDir2);
+
+    return diff;
+}
+
+
+
+diff_t cf::CompareFolders(const std::string& folder, const json_t json, ILogError& logger)
+{
+    const auto path_folder_1 = path_folder(folder);
+
+    // Compute the hashes
+    const cf::CFactoryHashes factoryHashes{};
+
+    const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, logger);
+    const CCollectionHash hashesDir2{ json.path };
+
+    const auto diff = hashesDir1.compare(hashesDir2);
 
     return diff;
 }
