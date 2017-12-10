@@ -64,8 +64,8 @@ diff_t cf::CompareFolders(const std::string& root_left, const std::string& root_
     // Compute the hashes
     const cf::CFactoryHashes factoryHashes{};
 
-    const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, logger);
-    const auto hashesDir2 = factoryHashes.ComputeHashes(path_folder_2, logger);
+    const auto hashesDir1 = factoryHashes.computeHashes(path_folder_1, logger);
+    const auto hashesDir2 = factoryHashes.computeHashes(path_folder_2, logger);
         
     const auto diff = hashesDir1.compare(hashesDir2);
 
@@ -75,8 +75,10 @@ diff_t cf::CompareFolders(const std::string& root_left, const std::string& root_
 
 diff_t cf::CompareFolders(const json_t left, const json_t right)
 {
-    const CCollectionHash hashesDir1{ right.path };
-    const CCollectionHash hashesDir2{ right.path };
+    const cf::CFactoryHashes factoryHashes{};
+
+    const auto hashesDir1 = factoryHashes.readHashes(left.path);
+    const auto hashesDir2 = factoryHashes.readHashes(right.path);
 
     const auto diff = hashesDir1.compare(hashesDir2);
 
@@ -92,8 +94,8 @@ diff_t cf::CompareFolders(const std::string& folder, const json_t json, ILogErro
     // Compute the hashes
     const cf::CFactoryHashes factoryHashes{};
 
-    const auto hashesDir1 = factoryHashes.ComputeHashes(path_folder_1, logger);
-    const CCollectionHash hashesDir2{ json.path };
+    const auto hashesDir1 = factoryHashes.computeHashes(path_folder_1, logger);
+    const auto hashesDir2 = factoryHashes.readHashes(json.path);
 
     const auto diff = hashesDir1.compare(hashesDir2);
 
@@ -105,6 +107,6 @@ string cf::ScanFolder(const string& path, ILogError& logger)
 {
     const auto folder = path_folder(path);
     const cf::CFactoryHashes factoryHashes{};
-    const auto properties = factoryHashes.ComputeHashes(folder, logger);
+    const auto properties = factoryHashes.computeHashes(folder, logger);
     return properties.json();
 }

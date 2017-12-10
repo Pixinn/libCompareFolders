@@ -20,6 +20,8 @@
 #include <future>
 
 #include <boost/filesystem.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <cryptopp/sha.h>
 #include <cryptopp/hex.h>
 #include <cryptopp/files.h>
@@ -32,14 +34,15 @@
 #include <iostream>
 
 using namespace std;
+namespace pt = boost::property_tree;
 
 namespace cf {
     
     ////////////////////////
     
-    /// @details Computing hashes can take some time. Thus, an external error logger must be provided
-    ///          to give the opportunity to report the errors in real time.
-    CCollectionHash CFactoryHashes::ComputeHashes(const fs::path& root, ILogError& logger) const
+    /// @detailed   Computing hashes can take some time. Thus, an external error logger must be provided
+    ///             to give the opportunity to report the errors in real time.
+    CCollectionHash CFactoryHashes::computeHashes(const fs::path& root, ILogError& logger) const
     {
         typedef struct resultHash_t{
             fs::path path;          ///< filepath
@@ -86,6 +89,21 @@ namespace cf {
         }
       
         return hashes;
+    }
+
+
+    CCollectionHash CFactoryHashes::readHashes(const fs::path& json_path) const
+    {
+        if(!fs::is_regular_file(json_path)) {
+            throw ExceptionFatal{json_path.string() + " is not a file."};
+        }
+        pt::ptree root;
+        pt::read_json(json_path.string(), root);
+        CCollectionHash collection{ fs::path{ root.get<string>("root") }};
+        for (const auto& file : root.get_child("files")) {
+            collection.setHash(fs::path{ file.first }, file.second.data());
+        }
+        return collection;
     }
     
 

@@ -33,28 +33,6 @@ namespace  cf
     
     ///////////////////////
 
-    CCollectionHash::CCollectionHash(const string& json) noexcept
-    {
-        pt::ptree root;
-        stringstream stream{ json, ios_base::in };
-        pt::read_json(stream, root);
-
-        // TODO         Check the generator
-        // UNIT_TEST    File that is not a JSON
-        // UNIT_TEST    Bad generator
-
-        const auto& mutable_root = _root;
-        const_cast<fs::path&>(mutable_root) = fs::path{ root.get<string>("root") };
-
-        for (const auto& file : root.get_child("files")) {
-            setHash(fs::path{ file.first }, file.second.data());
-        }
-
-    }
-
-
-    ///////////////////////
-
     void CCollectionHash::setHash(const fs::path& path, const string& hash)
     {        
         // Is it the first time a hash is provided for this file?

@@ -63,7 +63,8 @@ namespace cf
     typedef struct json_t {
         json_t(const std::string& p_path) :
             path{ p_path }
-        {   }
+        {     }
+        
         const std::string path;
     } json_t;
 
