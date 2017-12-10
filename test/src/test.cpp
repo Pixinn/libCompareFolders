@@ -395,9 +395,10 @@ TEST_CASE("NOMINAL")
     for (auto& entry : diff.renamed) {
         REQUIRE(find(begin(files_renamed), end(files_renamed), *begin(entry.left)) != end(files_renamed)); // Works because file were renamed in LEFT and there was no duplication
     }
-
    
 }
+
+
 
 
 

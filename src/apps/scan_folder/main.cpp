@@ -20,7 +20,9 @@
 #include <iostream>
 #include <list>
 #include <string>
+#include <fstream>
 
+#include <tclap/CmdLine.h>
 
 #include "CompareFolders.hpp"
 
@@ -43,22 +45,29 @@ public:
 /// @brief Compares the content of two folders and displays the result as JSON
 int main(int argc, char* argv[])
 {
-	// Sanity
-	if (argc != 2) {
-        cout << "Usage: " << argv[0] << " [DIRECTORY]" << endl;
-		return -1;
-	}
 
-    // Parse args
-    const string path_folder{ argv[1] };
+    // Parsing args
+    TCLAP::CmdLine cmd{ "Analyzes the content of a filder and export the result to a JSON file." };
+    TCLAP::ValueArg<string> folder("f", "folder", "The folder to be analyzed", true, "", "Folder's path");
+    TCLAP::ValueArg<string> output("o", "output", "The JSON file that will contain the descrition of the scanned folder", true, "",  "JSON filepath");
+    cmd.add(folder);
+    cmd.add(output);
+    cmd.parse(argc, argv);
+    const auto path_folder = folder.getValue();
+    const auto path_output = output.getValue();
 
     cout << "\nSCANNING \"" << path_folder << '\"' << endl;
     
     try {
         
         LogError logErr;
-        cout << cf::ScanFolder(path_folder, logErr);
-
+        const auto json = cf::ScanFolder(path_folder, logErr);
+        ofstream stream{ path_output , ios::out };
+        if (!stream) {
+            throw runtime_error{ "Cannot write to " + path_output };
+        }
+        stream << json;
+        stream.close();
     }
     catch (const exception& e)
     {

@@ -99,6 +99,7 @@ target_include_directories(${APP_COMPAREFOLDERS_NAME} 	PRIVATE	${Boost_INCLUDE_D
 target_include_directories(${APP_SCANFOLDER_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS} 			        # to be removed
 													    ${CMAKE_SOURCE_DIR}/submodules	                # to be removed
 													    ${SRC_DIR_APPS}/${APP_SCANFOLDER_NAME}/	    # to be removed
+                                                        ${SRC_DIR_APPS}/common
 													    ${INCLUDE_DIR}
 )
 

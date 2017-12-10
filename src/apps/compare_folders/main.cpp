@@ -18,6 +18,7 @@
 
 
 #include <iostream>
+#include <fstream>
 #include <list>
 #include <string>
 
@@ -47,14 +48,17 @@ int main(int argc, char* argv[])
     try
     {
         // Parsing args
-        TCLAP::CmdLine cmd{ "Compares the content of two folders, given paths or JSON files." };
-        TCLAP::MultiArg<string> folders("f", "folder", "An actual folder to be compared", false, "Folder's path"); // at least one folder must be provided
-        TCLAP::MultiArg<string> json("j", "json", "A JSON file containing the descrition of a preiously scanned folder", false, "JSON filepath");
+        TCLAP::CmdLine cmd{ "Compares the content of two folders, given paths or JSON files. If no output is provided, differences will be displayed." };
+        TCLAP::MultiArg<string> folders("f", "folder", "An actual folder to be compared", false, "Folder's path");
+        TCLAP::MultiArg<string> json("j", "json", "A JSON file containing the descrition of a previously scanned folder", false, "JSON filepath");
+        TCLAP::ValueArg<string> output("o", "output", "A JSON file that will contain the result of the comparison. If provided, no result is displayed on the screen.", false, "", "JSON filepath");
         cmd.add(folders);
         cmd.add(json);
+        cmd.add(output);
         cmd.parse(argc, argv);
         const auto path_folders = folders.getValue();
         const auto path_json = json.getValue();
+        const auto path_output = output.getValue();
 
         if (path_folders.size() + path_json.size() != 2u) {
             throw(TCLAP::ArgException{ "You shall give two entries (JSON or FOLDER) to be compared.\n\nType \"" + string{argv[0]} + " -h\" for help.\n"});
@@ -62,27 +66,44 @@ int main(int argc, char* argv[])
 
         // Execute       
         LogError logErr;
+        string result;
 
         // Compare two folders
         if (path_folders.size() == 2u) 
         {
-            cout << "\nCOMPARING\n\n" << '\"' << path_folders[0] << "\"\n\tand\n\"" << path_folders[1] << "\"\n" << endl;
-            const auto diff = cf::CompareFolders(path_folders[0], path_folders[1], logErr);
-            cout << cf::Json(diff);
+            if (!path_output.empty()) {
+                cout << "\nCOMPARING\n\n" << '\"' << path_folders[0] << "\"\n\tand\n\"" << path_folders[1] << "\"\n" << endl;
+            }
+            result = cf::Json(cf::CompareFolders(path_folders[0], path_folders[1], logErr));
         }
         // Compare one folder and one JSON file
         else if (path_folders.size() == 1)
         {
-            cout << "\nCOMPARING\n\n" << '\"' << path_folders[0] << "\"\n\tand\n\"" << path_json[0] << "\"\n" << endl;
-            const auto diff = cf::CompareFolders(path_folders[0], cf::json_t{path_json [0]}, logErr);
-            cout << cf::Json(diff);
+            if (!path_output.empty()) {
+                cout << "\nCOMPARING\n\n" << '\"' << path_folders[0] << "\"\n\tand\n\"" << path_json[0] << "\"\n" << endl;
+            }
+            result = cf::Json(cf::CompareFolders(path_folders[0], cf::json_t{path_json [0]}, logErr));
         }
         // Compare two JSON files
         else
         {
-            cout << "\nCOMPARING\n\n" << '\"' << path_json[0] << "\"\n\tand\n\"" << path_json[1] << "\"\n" << endl;
-            const auto diff = cf::CompareFolders(cf::json_t{ path_json[0] }, cf::json_t{ path_json[1] });
-            cout << cf::Json(diff);
+            if (!path_output.empty()) {
+                cout << "\nCOMPARING\n\n" << '\"' << path_json[0] << "\"\n\tand\n\"" << path_json[1] << "\"\n" << endl;
+            }
+            result = cf::Json(cf::CompareFolders(cf::json_t{ path_json[0] }, cf::json_t{ path_json[1] }));
+        }
+
+        // Output th eresult
+        if (path_output.empty())  {
+            cout << result;
+        }
+        else {
+            ofstream stream{ path_output , ios::out };
+            if (!stream) {
+                throw runtime_error{ "Cannot write to " + path_output };
+            }
+            stream << result;
+            stream.close();
         }
     }
     catch (TCLAP::ArgException &e)  // catch any exceptions
@@ -95,6 +116,7 @@ int main(int argc, char* argv[])
         cout << e.what() << endl;
         return -1;
     }
+
 
     return 0;
 
