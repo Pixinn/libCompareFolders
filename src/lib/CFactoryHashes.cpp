@@ -99,8 +99,13 @@ namespace cf {
         }
         pt::ptree root;
         pt::read_json(json_path.string(), root);
-        CCollectionHash collection{ fs::path{ root.get<string>("root") }};
-        for (const auto& file : root.get_child("files")) {
+        const auto generator= root.get<string>(JSON_KEYS.GENERATOR);
+        if (generator != JSON_CONST_VALUES.GENERATOR) {
+            throw ExceptionFatal{ "This is not a proper file." };
+        }
+        CCollectionHash collection{ fs::path{ root.get<string>(JSON_KEYS.ROOT) }};
+
+        for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
             collection.setHash(fs::path{ file.first }, file.second.data());
         }
         return collection;

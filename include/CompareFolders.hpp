@@ -25,7 +25,28 @@
 
 namespace cf
 {
+    /// @brief Description of the keys used in JSON files
+    static const struct  {
+        const std::string GENERATOR{ "Generator" };                 ///< Program used to generate the JSON file
+        const std::string ROOT{ "root" };                           ///< Root folder
+        const struct  {
+            const std::string IDENTICAL{ "identical" };             ///< Identical files
+            const std::string DIFFERENT{ "different" };             ///< Different files
+            const std::string UNIQUE_LEFT{ "unique left" };         ///< Files that are unique to the left
+            const std::string UNIQUE_RIGHT{ "unique right" };       ///< Files that are unique to the right
+            const std::string RENAMED{ "renamed and duplicates" };  ///< Files that are identical but where renamed, moved or duplicated
+            const std::string LEFT{ "left" };
+            const std::string RIGHT{ "right" };
+        } DIFF;                                                     ///< Differences betwwen two folders
+        const struct {
+            const std::string FILES{ "files" };                     ///< Files inside a folder
+        } CONTENT;                                                  ///< Description of a filder's content
+    } JSON_KEYS;
 
+    /// @brief Description of the const values that pmay be used in JSON files
+    static const struct {
+        const std::string GENERATOR{ "info.xtof.COMPARE_FOLDERS" };
+    } JSON_CONST_VALUES;
 
     /// @brief A fatal error occured
     class ExceptionFatal : public std::runtime_error

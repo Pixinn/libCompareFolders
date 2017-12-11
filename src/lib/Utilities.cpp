@@ -34,7 +34,7 @@ namespace cf
     string Json(const diff_t diff)
     {
         pt::ptree root;
-        root.put("Generator", "info.xtof.COMPARE_FOLDERS");
+        root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);
 
         // identical files
         pt::ptree node_identical;
@@ -43,7 +43,7 @@ namespace cf
             node_entry.put("", entry);
             node_identical.push_back(make_pair("", node_entry));
         }
-        root.add_child("identical", node_identical);
+        root.add_child(JSON_KEYS.DIFF.IDENTICAL, node_identical);
 
         // different files
         pt::ptree node_different;
@@ -52,7 +52,7 @@ namespace cf
             node_entry.put("", entry);
             node_different.push_back(make_pair("", node_entry));
         }
-        root.add_child("different", node_different);
+        root.add_child(JSON_KEYS.DIFF.DIFFERENT, node_different);
 
         // files unique to the left
         pt::ptree node_unique_left;
@@ -61,7 +61,7 @@ namespace cf
             node_entry.put("", entry);
             node_unique_left.push_back(make_pair("", node_entry));
         }
-        root.add_child("unique left", node_unique_left);
+        root.add_child(JSON_KEYS.DIFF.UNIQUE_LEFT, node_unique_left);
 
         // files unique to the right
         pt::ptree node_unique_right;
@@ -70,7 +70,7 @@ namespace cf
             node_entry.put("", entry);
             node_unique_right.push_back(make_pair("", node_entry));
         }
-        root.add_child("unique right", node_unique_right);
+        root.add_child(JSON_KEYS.DIFF.UNIQUE_RIGHT, node_unique_right);
 
         // renamed and duplicates
         pt::ptree renamed;
@@ -82,7 +82,7 @@ namespace cf
                 node_entry.put("", entry_left);
                 left.push_back(make_pair("", node_entry));
             }
-            renamed.push_back(make_pair("left", left));
+            renamed.push_back(make_pair(JSON_KEYS.DIFF.LEFT, left));
 
             pt::ptree right;
             for (const auto& entry_right : entry.right) {
@@ -90,9 +90,9 @@ namespace cf
                 node_entry.put("", entry_right);
                 right.push_back(make_pair("", node_entry));
             }
-            renamed.push_back(make_pair("right", right));
+            renamed.push_back(make_pair(JSON_KEYS.DIFF.RIGHT, right));
         }
-        root.add_child("renamed and duplicates", renamed);
+        root.add_child(JSON_KEYS.DIFF.RENAMED, renamed);
 
         // Get the string and returns
         stringstream stream{ ios_base::out };

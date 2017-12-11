@@ -20,6 +20,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include "CompareFolders.hpp"
 #include "CCollectionHash.hpp"
 
 
@@ -166,13 +167,13 @@ namespace  cf
     string CCollectionHash::json() const
     {
         pt::ptree root;
-        root.put("Generator", "info.xtof.COMPARE_FOLDERS");
-        root.put("root", _root.string());
+        root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);
+        root.put(JSON_KEYS.ROOT, _root.string());
         pt::ptree node_hashes;
         for (const auto& entry : _file_hashes) {
             node_hashes.push_back(pt::ptree::value_type(entry.first.string(), entry.second)); // not using "put()" as '.' is its delimiter
         }
-        root.add_child("files", node_hashes);
+        root.add_child(JSON_KEYS.CONTENT.FILES, node_hashes);
 
         // Get the string and returns
         stringstream stream{ ios_base::out };
