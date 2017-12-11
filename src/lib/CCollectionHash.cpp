@@ -167,7 +167,7 @@ namespace  cf
     {
         pt::ptree root;
         root.put("Generator", "info.xtof.COMPARE_FOLDERS");
-        root.put("root", _root);
+        root.put("root", _root.string());
         pt::ptree node_hashes;
         for (const auto& entry : _file_hashes) {
             node_hashes.push_back(pt::ptree::value_type(entry.first.string(), entry.second)); // not using "put()" as '.' is its delimiter

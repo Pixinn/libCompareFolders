@@ -43,6 +43,7 @@ constexpr unsigned MAX_NB_FILES_TO_RENAME = 10u;
 
 
 static pair<fs::path, fs::path> Folders;
+static cf::diff_t Diff;
 
 
 /// @rbrief returns the identical files
@@ -372,33 +373,61 @@ TEST_CASE("NOMINAL")
     auto files_renamed = Rename_Files(Folders.first, files_identical);
 
     // Compare
-    const auto diff = cf::CompareFolders(Folders.first.string(), Folders.second.string());
+    Diff = cf::CompareFolders(Folders.first.string(), Folders.second.string());
 
     // Check results
-    REQUIRE(diff.identical.size() == files_identical.size());
-    for (auto& entry : diff.identical) {
+    REQUIRE(Diff.identical.size() == files_identical.size());
+    for (auto& entry : Diff.identical) {
         REQUIRE(find(begin(files_identical), end(files_identical), entry) != end(files_identical));
     }
-    REQUIRE(diff.different.size() == files_modified.size());
-    for (auto& entry : diff.different) {
+    REQUIRE(Diff.different.size() == files_modified.size());
+    for (auto& entry : Diff.different) {
         REQUIRE(find(begin(files_modified), end(files_modified), entry) != end(files_modified));
     }
-    REQUIRE(diff.unique_left.size() == files_unique_left.size());
-    for (auto& entry : diff.unique_left) {
+    REQUIRE(Diff.unique_left.size() == files_unique_left.size());
+    for (auto& entry : Diff.unique_left) {
         REQUIRE(find(begin(files_unique_left), end(files_unique_left), entry) != end(files_unique_left));
     }
-    REQUIRE(diff.unique_right.size() == files_unique_right.size());
-    for (auto& entry : diff.unique_right) {
+    REQUIRE(Diff.unique_right.size() == files_unique_right.size());
+    for (auto& entry : Diff.unique_right) {
         REQUIRE(find(begin(files_unique_right), end(files_unique_right), entry) != end(files_unique_right));
     }
-    REQUIRE(diff.renamed.size() == files_renamed.size());
-    for (auto& entry : diff.renamed) {
+    REQUIRE(Diff.renamed.size() == files_renamed.size());
+    for (auto& entry : Diff.renamed) {
         REQUIRE(find(begin(files_renamed), end(files_renamed), *begin(entry.left)) != end(files_renamed)); // Works because file were renamed in LEFT and there was no duplication
     }
    
 }
 
 
+
+TEST_CASE("JSON NOMINAL")
+{
+    const fs::path path_json_left{ fs::temp_directory_path() / "compare_folder_left.json" };
+    const fs::path path_json_right{ fs::temp_directory_path() / "compare_folder_right.json" };
+    
+    // Save folder 1 as a JSON file    
+    fs::fstream stream_json_left{ path_json_left, ios::out };
+    if (!stream_json_left) {
+        throw(runtime_error{ "Cannot create " + path_json_left.string() + " required to complete the test." });
+    }
+    auto json = cf::ScanFolder(Folders.first.string());
+    stream_json_left << json;
+    stream_json_left.close();
+    // Save folder 2 as a JSON file    
+    fs::fstream stream_json_right{ path_json_right, ios::out };
+    if (!stream_json_right) {
+        throw(runtime_error{ "Cannot create " + path_json_right.string() + " required to complete the test." });
+    }
+    json = cf::ScanFolder(Folders.second.string());
+    stream_json_right << json;
+    stream_json_right.close();
+
+    // Use the JSON files to compare the folders
+    const auto diff = cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
+
+    REQUIRE(diff == Diff);
+}
 
 
 

@@ -41,6 +41,71 @@ ExceptionFatal::ExceptionFatal(const std::string& msg) :
 
 // ===== PRIVATE FACILITIES
 
+
+bool cf::diff_t::operator==(const cf::diff_t& rhs) const noexcept
+{
+    if (root_left != rhs.root_left || root_right != rhs.root_right) {
+        return false;
+    }
+
+    if (identical.size() != rhs.identical.size()) {
+        return false;
+    }
+    for (const auto& entry : identical) {
+        if (find(begin(rhs.identical), end(rhs.identical), entry) == end(rhs.identical)) {
+            return false;
+        }
+    }
+
+    if (different.size() != rhs.different.size()) {
+        return false;
+    }
+    for (const auto& entry : different) {
+        if (find(begin(rhs.different), end(rhs.different), entry) == end(rhs.different)) {
+            return false;
+        }
+    }
+
+    if (unique_left.size() != rhs.unique_left.size()) {
+        return false;
+    }
+    for (const auto& entry : unique_left) {
+        if (find(begin(rhs.unique_left), end(rhs.unique_left), entry) == end(rhs.unique_left)) {
+            return false;
+        }
+    }
+
+    if (unique_right.size() != rhs.unique_right.size()) {
+        return false;
+    }
+    for (const auto& entry : unique_right) {
+        if (find(begin(rhs.unique_right), end(rhs.unique_right), entry) == end(rhs.unique_right)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
+bool cf::diff_t::renamed_t::operator==(const cf::diff_t::renamed_t& rhs) const noexcept
+{
+    if (left.size() != rhs.left.size() || right.size() != rhs.right.size()) {
+        return false;
+    }
+    for (const auto& entry : left) {
+        if (find(begin(rhs.left), end(rhs.left), entry) == end(rhs.left)) {
+            return false;
+        }
+    }
+    for (const auto& entry : right) {
+        if (find(begin(rhs.right), end(rhs.right), entry) == end(rhs.right)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /// @brief Constructs a path object from a sanitized string
 inline const fs::path path_folder(const string str_path)
 {
