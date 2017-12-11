@@ -20,6 +20,8 @@
 #include <future>
 
 #include <boost/filesystem.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <cryptopp/sha.h>
 #include <cryptopp/hex.h>
 #include <cryptopp/files.h>
@@ -32,18 +34,20 @@
 #include <iostream>
 
 using namespace std;
+namespace pt = boost::property_tree;
 
 namespace cf {
     
     ////////////////////////
     
-    /// @details Computing hashes can take some time. Thus, an external error logger must be provided
-    ///          to give the opportunity to report the errors in real time.
-    CCollectionHash CFactoryHashes::ComputeHashes(const fs::path& root, ILogError& logger) const
+    /// @detailed   Computing hashes can take some time. Thus, an external error logger must be provided
+    ///             to give the opportunity to report the errors in real time.
+    CCollectionHash CFactoryHashes::computeHashes(const fs::path& root, ILogError& logger) const
     {
         typedef struct resultHash_t{
-            fs::path path;
-            string hash;
+            fs::path path;          ///< filepath
+            string hash;            ///< hash of the file
+            time_t time_modified;   ///< time of last modification 
         } hash_t;
 
         // Scheduling jobs to compute hashes
@@ -63,8 +67,9 @@ namespace cf {
                     new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
                 );
                 const auto path_relative = fs::relative(path, root);
+                const auto time_modified = fs::last_write_time(path);
 
-                return hash_t{ path_relative, hash };
+                return hash_t{ path_relative, hash, time_modified };
             }
             ));
         }
@@ -84,6 +89,26 @@ namespace cf {
         }
       
         return hashes;
+    }
+
+
+    CCollectionHash CFactoryHashes::readHashes(const fs::path& json_path) const
+    {
+        if(!fs::is_regular_file(json_path)) {
+            throw ExceptionFatal{json_path.string() + " is not a file."};
+        }
+        pt::ptree root;
+        pt::read_json(json_path.string(), root);
+        const auto generator= root.get<string>(JSON_KEYS.GENERATOR);
+        if (generator != JSON_CONST_VALUES.GENERATOR) {
+            throw ExceptionFatal{ "This is not a proper file." };
+        }
+        CCollectionHash collection{ fs::path{ root.get<string>(JSON_KEYS.ROOT) }};
+
+        for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
+            collection.setHash(fs::path{ file.first }, file.second.data());
+        }
+        return collection;
     }
     
 

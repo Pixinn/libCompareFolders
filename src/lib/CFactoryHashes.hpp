@@ -40,7 +40,11 @@ namespace  cf {
         /// @brief Builds a collection with all the directory's files' hashes
         /// @param root Root folder: all its files will be hashed
         /// @param loggerErr Will log eventual errors
-        CCollectionHash ComputeHashes(const fs::path& root, ILogError& loggerErr) const;
+        CCollectionHash computeHashes(const fs::path& root, ILogError& loggerErr) const;
+
+        /// @brief Builds a collection from the values store in a JSON file
+        /// @param json_path Pth to the JSON file storing the hashes
+        CCollectionHash readHashes(const fs::path& json_path) const;
     
     private:
         /// @brief Lists and returns all **files** entries located inside the provided directory

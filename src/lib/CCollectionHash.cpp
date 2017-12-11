@@ -15,12 +15,18 @@
 16  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 17 */
 
+#include <sstream>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
+#include "CompareFolders.hpp"
 #include "CCollectionHash.hpp"
 
 
 using namespace std;
+namespace pt = boost::property_tree;
+
 
 
 namespace  cf
@@ -28,7 +34,7 @@ namespace  cf
     
     ///////////////////////
 
-    void CCollectionHash::setHash(const boost::filesystem::path& path, const string& hash)
+    void CCollectionHash::setHash(const fs::path& path, const string& hash)
     {        
         // Is it the first time a hash is provided for this file?
         {
@@ -156,18 +162,25 @@ namespace  cf
             list_renamed
         };
     }
-    
-    
-    
-    ///////////////////////
-    
-    string CCollectionHash::toString() const
+
+
+    string CCollectionHash::json() const
     {
-        string str;
-        for(auto it = _file_hashes.begin(); it != _file_hashes.end(); ++it) {
-            str += it->first.string() + " : " + it->second + "\n";
+        pt::ptree root;
+        root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);
+        root.put(JSON_KEYS.ROOT, _root.string());
+        pt::ptree node_hashes;
+        for (const auto& entry : _file_hashes) {
+            node_hashes.push_back(pt::ptree::value_type(entry.first.string(), entry.second)); // not using "put()" as '.' is its delimiter
         }
-        return str;
+        root.add_child(JSON_KEYS.CONTENT.FILES, node_hashes);
+
+        // Get the string and returns
+        stringstream stream{ ios_base::out };
+        pt::write_json(stream, root);
+        return stream.str();
     }
+    
+    
 
 }
