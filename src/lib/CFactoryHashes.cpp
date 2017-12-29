@@ -44,21 +44,12 @@ namespace cf {
     ///             to give the opportunity to report the errors in real time.
     CCollectionHash CFactoryHashes::computeHashes(const fs::path& root, ILogError& logger) const
     {
-        typedef struct resultHash_t{
-            fs::path path;          ///< filepath
-            string hash;            ///< hash of the file
-            time_t time_modified;   ///< time of last modification 
-        } hash_t;
-
-        // Scheduling jobs to compute hashes
         const auto paths = listFiles(root);
+        CCollectionHash hashes{ root };
 
-        vector<future<resultHash_t>> jobs_scheduled;
-        jobs_scheduled.reserve(paths.size());
-
-        for (const auto& path : paths)
+        try 
         {
-            jobs_scheduled.push_back(async([&root, path]()  -> hash_t
+            for (const auto& path : paths)
             {
                 constexpr bool isUpperCase = true;
                 string hash;
@@ -69,23 +60,12 @@ namespace cf {
                 const auto path_relative = fs::relative(path, root);
                 const auto time_modified = fs::last_write_time(path);
 
-                return hash_t{ path_relative, hash, time_modified };
+                hashes.setHash(path_relative, { hash, time_modified } );
             }
-            ));
         }
-
-        // Collecting the results of the jobs
-        CCollectionHash hashes{ root };
-        for (auto& job : jobs_scheduled)
-        {
-            try {
-                const auto& result = job.get();
-                hashes.setHash(result.path, result.hash);
-            }
-            catch (const CryptoPP::Exception& e) {
-                const string message = string{ "Hashing error: " } + e.what();
-                logger.log(message);
-            }
+        catch (const CryptoPP::Exception& e) {
+            const string message = string{ "Hashing error: " } +e.what();
+            logger.log(message);
         }
       
         return hashes;
@@ -106,7 +86,9 @@ namespace cf {
         CCollectionHash collection{ fs::path{ root.get<string>(JSON_KEYS.ROOT) }};
 
         for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
-            collection.setHash(fs::path{ file.first }, file.second.data());
+            const auto hash = file.second.get_child(JSON_KEYS.CONTENT.HASH).data();
+            const time_t time = std::stoll(file.second.get_child(JSON_KEYS.CONTENT.TIME).data());
+            collection.setHash(fs::path{ file.first }, { hash, time });
         }
         return collection;
     }

@@ -40,6 +40,8 @@ namespace cf
         } DIFF;                                                     ///< Differences betwwen two folders
         const struct {
             const std::string FILES{ "files" };                     ///< Files inside a folder
+            const std::string HASH{ "hash" };                       ///< Hash of a file's conte,t
+            const std::string TIME{ "last_modified" };              ///< Time of file's last modification
         } CONTENT;                                                  ///< Description of a filder's content
     } JSON_KEYS;
 

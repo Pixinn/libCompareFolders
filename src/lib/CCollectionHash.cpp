@@ -34,24 +34,24 @@ namespace  cf
     
     ///////////////////////
 
-    void CCollectionHash::setHash(const fs::path& path, const string& hash)
+    void CCollectionHash::setHash(const fs::path& path, const info_t& info)
     {        
         // Is it the first time a hash is provided for this file?
         {
-            const auto idx =_file_hashes.find(path);
-            if(idx == _file_hashes.end()) {
-                _file_hashes.emplace(make_pair(path, hash));
+            const auto idx =_file_infos.find(path);
+            if(idx == _file_infos.end()) {
+                _file_infos.emplace(make_pair(path, info));
             }
             else {
-                idx->second = hash;
+                idx->second = info;
             }
         }
         
         // Is it first file with this hash?
         {
-            const auto idx = _hash_files.find(hash);
+            const auto idx = _hash_files.find(info.hash);
             if(idx == _hash_files.end()) {
-                _hash_files.emplace(make_pair(hash, list<fs::path>{path}));
+                _hash_files.emplace(make_pair(info.hash, list<fs::path>{path}));
             }
             else {
                 idx->second.push_back(path);
@@ -65,18 +65,18 @@ namespace  cf
     
     void CCollectionHash::removePath(const fs::path& path)
     {
-        const auto file_hash = _file_hashes.find(path);
-        if(file_hash == _file_hashes.end()) { // not found
+        const auto file_info = _file_infos.find(path);
+        if(file_info == _file_infos.end()) { // not found
             return;
         }
         
         // Removing the entry in the collection of files
-        const auto file = file_hash->first;
-        const auto hash = file_hash->second;
-        _file_hashes.erase(file_hash);
+        const auto file = file_info->first;
+        const auto info = file_info->second;
+        _file_infos.erase(file_info);
         
         // Removing the file from the files with this hash
-        const auto hash_files = _hash_files.find(hash);
+        const auto hash_files = _hash_files.find(info.hash);
         assert(hash_files != _hash_files.end());
         auto& files_with_hash = hash_files->second;
         const auto idx_file = find(files_with_hash.begin(), files_with_hash.end(), file);
@@ -97,34 +97,34 @@ namespace  cf
         list<string> identical;
         list<string> different;
         list<string> unique_left;
-        for(const auto& file_hash : _file_hashes)
+        for(const auto& file_info : _file_infos)
         {
-            const auto& file_hash_right = rhs._file_hashes.find(file_hash.first);
-            if(file_hash_right != rhs._file_hashes.end()) // file with the same relative path
+            const auto& file_hash_right = rhs._file_infos.find(file_info.first);
+            if(file_hash_right != rhs._file_infos.end()) // file with the same relative path
             {
-                if(file_hash_right->second == file_hash.second) { // identical
-                    identical.push_back(file_hash.first.string());
+                if(file_hash_right->second == file_info.second) { // identical
+                    identical.push_back(file_info.first.string());
                 }
                 else { // different
-                    different.push_back(file_hash.first.string());
+                    different.push_back(file_info.first.string());
                 }
-                rhs.removePath(file_hash.first);
+                rhs.removePath(file_info.first);
             }
             else    // no file with the same relative path
             {       // any other filename with the same content (hash)??
-                const auto it_hash = rhs._hash_files.find(file_hash.second);
+                const auto it_hash = rhs._hash_files.find(file_info.second.hash);
                 if(it_hash == rhs._hash_files.end()) { // file is unique to the left
-                     unique_left.push_back(file_hash.first.string());
+                     unique_left.push_back(file_info.first.string());
                 }
             }
         }
         
         // Find unique_right
         list<string> unique_right;
-        for(const auto& file_hash : rhs._file_hashes)
+        for(const auto& file_hash : rhs._file_infos)
         {
-            if(_file_hashes.find(file_hash.first) == _file_hashes.end() &&   // left has no file with the same relative path
-               _hash_files.find(file_hash.second) == _hash_files.end())      // nor the same content (hash)
+            if(_file_infos.find(file_hash.first) == _file_infos.end() &&   // left has no file with the same relative path
+               _hash_files.find(file_hash.second.hash) == _hash_files.end())      // nor the same content (hash)
             {
                 unique_right.push_back(file_hash.first.string());
             }
@@ -169,11 +169,14 @@ namespace  cf
         pt::ptree root;
         root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);
         root.put(JSON_KEYS.ROOT, _root.string());
-        pt::ptree node_hashes;
-        for (const auto& entry : _file_hashes) {
-            node_hashes.push_back(pt::ptree::value_type(entry.first.string(), entry.second)); // not using "put()" as '.' is its delimiter
+        pt::ptree node_files;
+        for (const auto& entry : _file_infos) {
+            pt::ptree node_info;
+            node_info.put(JSON_KEYS.CONTENT.HASH, entry.second.hash);
+            node_info.put(JSON_KEYS.CONTENT.TIME, entry.second.time_modified);
+            node_files.push_back(pt::ptree::value_type(entry.first.string(), node_info)); // not using "put()" as '.' is its delimiter
         }
-        root.add_child(JSON_KEYS.CONTENT.FILES, node_hashes);
+        root.add_child(JSON_KEYS.CONTENT.FILES, node_files);
 
         // Get the string and returns
         stringstream stream{ ios_base::out };
