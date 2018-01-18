@@ -71,6 +71,7 @@ namespace  cf {
         }
         
     private:
+
         std::map<fs::path, info_t> _file_infos;                 ///< File pathes and their corresponding info
         std::map<std::string, std::list<fs::path>> _hash_files; ///< Hash with the corresponding files. Useful for duplicate files.
         const fs::path _root;                                   ///< Root folder containing all the files hashed 

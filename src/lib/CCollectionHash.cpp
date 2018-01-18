@@ -93,62 +93,64 @@ namespace  cf
     
     diff_t CCollectionHash::compare(CCollectionHash rhs) const
     {
-        // Find identical, different and unique_left
+
         list<string> identical;
         list<string> different;
         list<string> unique_left;
-        for(const auto& file_info : _file_infos)
+        list<string> unique_right;
+        list<diff_t::renamed_t> list_renamed;
+
+        for (const auto& file_info : _file_infos)
         {
             const auto& file_hash_right = rhs._file_infos.find(file_info.first);
-            if(file_hash_right != rhs._file_infos.end()) // file with the same relative path
+            if (file_hash_right != rhs._file_infos.end()) // file with the same relative path
             {
-                if(file_hash_right->second == file_info.second) { // identical
+                if (file_hash_right->second == file_info.second) { // identical
                     identical.push_back(file_info.first.string());
                 }
                 else { // different
                     different.push_back(file_info.first.string());
                 }
-                rhs.removePath(file_info.first);
             }
-            else    // no file with the same relative path
-            {       // any other filename with the same content (hash)??
-                const auto it_hash = rhs._hash_files.find(file_info.second.hash);
-                if(it_hash == rhs._hash_files.end()) { // file is unique to the left
-                     unique_left.push_back(file_info.first.string());
+            else
+            {
+                // Search in the right hashes if files with same content are found
+                const auto& hash = file_info.second.hash;
+                const auto hash_files_right = rhs._hash_files.find(hash);
+                if (hash_files_right == std::end(rhs._hash_files)) {
+                    unique_left.push_back(file_info.first.string()); // Nope: it's unique to the left
+                }
+                else
+                {  // Found some match: same file with a different relative path / filename
+                    diff_t::renamed_t renamed;
+                    renamed.hash = hash;
+                    const auto& hash_files_left = _hash_files.find(hash);
+                    for (const auto& file : hash_files_left->second) {
+                        renamed.left.push_back(file.string());
+                    }
+                    for (const auto& file : hash_files_right->second) {
+                        renamed.right.push_back(file.string());
+                    }
+                    list_renamed.push_back(renamed);
                 }
             }
         }
-        
-        // Find unique_right
-        list<string> unique_right;
-        for(const auto& file_hash : rhs._file_infos)
+
+        for (const auto& file_info : rhs._file_infos)
         {
-            if(_file_infos.find(file_hash.first) == _file_infos.end() &&   // left has no file with the same relative path
-               _hash_files.find(file_hash.second.hash) == _hash_files.end())      // nor the same content (hash)
-            {
-                unique_right.push_back(file_hash.first.string());
+            const auto& path = file_info.first.string();
+            //Is the file in the identical or different lists?
+            const auto isIdentical = (find(begin(identical), end(identical), path) != end(identical));
+            const auto isDifferent = (find(begin(different), end(different), path) != end(different));
+            if (!isIdentical && !isDifferent) // Nope
+            { 
+                // Has this file a twin with the same content here?
+                const auto& hash = file_info.second.hash;
+                const auto hasSomeTwins = (_hash_files.find(hash) != end(_hash_files));
+                if (!hasSomeTwins) {
+                    unique_right.push_back(path);
+                }
             }
-        }
-        for(const auto& file : unique_right) {
-            rhs.removePath(file);
-        }
-        
-        // Find renamed files with the same content
-        list<diff_t::renamed_t> list_renamed;
-        for(const auto& hash_files : rhs._hash_files)
-        {
-            const auto& hash = hash_files.first;
-            const auto& files_right = hash_files.second;
-            const auto hash_files_left = _hash_files.find(hash);
-            assert(hash_files_left != _hash_files.end());
-            diff_t::renamed_t renamed;
-            for(const auto& file : hash_files_left->second) {
-                renamed.left.push_back(file.string());
-            }
-            for(const auto& file : files_right) {
-                renamed.right.push_back(file.string());
-            }
-            list_renamed.push_back(renamed);
         }
         
         

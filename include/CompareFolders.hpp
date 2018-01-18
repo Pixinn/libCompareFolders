@@ -103,7 +103,7 @@ namespace cf
         typedef struct renamed_t
         {
             bool operator==(const renamed_t& rhs) const noexcept;
-
+            std::string hash;             ///< hash of the files
             std::list<std::string> left;  ///< Left files with the same content
             std::list<std::string> right; ///< Right files with the same content
         } renamed_t;

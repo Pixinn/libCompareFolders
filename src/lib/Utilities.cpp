@@ -85,13 +85,14 @@ namespace cf
             pt::ptree renamed;
             for (const auto& entry : diff.renamed)
             {
+                pt::ptree names;
                 pt::ptree left;
                 for (const auto& entry_left : entry.left) {
                     pt::ptree node_entry;
                     node_entry.put("", entry_left);
                     left.push_back(make_pair("", node_entry));
                 }
-                renamed.push_back(make_pair(JSON_KEYS.DIFF.LEFT, left));
+                names.push_back(make_pair(JSON_KEYS.DIFF.LEFT, left));
 
                 pt::ptree right;
                 for (const auto& entry_right : entry.right) {
@@ -99,7 +100,8 @@ namespace cf
                     node_entry.put("", entry_right);
                     right.push_back(make_pair("", node_entry));
                 }
-                renamed.push_back(make_pair(JSON_KEYS.DIFF.RIGHT, right));
+                names.push_back(make_pair(JSON_KEYS.DIFF.RIGHT, right));
+                renamed.push_back(make_pair(entry.hash, names));
             }
             root.add_child(JSON_KEYS.DIFF.RENAMED, renamed);
         }

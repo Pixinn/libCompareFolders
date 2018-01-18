@@ -90,7 +90,7 @@ bool cf::diff_t::operator==(const cf::diff_t& rhs) const noexcept
 
 bool cf::diff_t::renamed_t::operator==(const cf::diff_t::renamed_t& rhs) const noexcept
 {
-    if (left.size() != rhs.left.size() || right.size() != rhs.right.size()) {
+    if (hash != rhs.hash || left.size() != rhs.left.size() || right.size() != rhs.right.size()) {
         return false;
     }
     for (const auto& entry : left) {
