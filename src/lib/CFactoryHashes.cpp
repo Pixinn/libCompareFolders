@@ -20,6 +20,8 @@
 #include <future>
 
 #include <boost/filesystem.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <cryptopp/sha.h>
 #include <cryptopp/hex.h>
 #include <cryptopp/files.h>
@@ -32,29 +34,22 @@
 #include <iostream>
 
 using namespace std;
+namespace pt = boost::property_tree;
 
 namespace cf {
     
     ////////////////////////
     
-    /// @details Computing hashes can take some time. Thus, an external error logger must be provided
-    ///          to give the opportunity to report the errors in real time.
-    CCollectionHash CFactoryHashes::ComputeHashes(const fs::path& root, ILogError& logger) const
+    /// @detailed   Computing hashes can take some time. Thus, an external error logger must be provided
+    ///             to give the opportunity to report the errors in real time.
+    CCollectionHash CFactoryHashes::computeHashes(const fs::path& root, ILogError& logger) const
     {
-        typedef struct resultHash_t{
-            fs::path path;
-            string hash;
-        } hash_t;
-
-        // Scheduling jobs to compute hashes
         const auto paths = listFiles(root);
+        CCollectionHash hashes{ root };
 
-        vector<future<resultHash_t>> jobs_scheduled;
-        jobs_scheduled.reserve(paths.size());
-
-        for (const auto& path : paths)
+        try 
         {
-            jobs_scheduled.push_back(async([&root, path]()  -> hash_t
+            for (const auto& path : paths)
             {
                 constexpr bool isUpperCase = true;
                 string hash;
@@ -63,27 +58,39 @@ namespace cf {
                     new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
                 );
                 const auto path_relative = fs::relative(path, root);
+                const auto time_modified = fs::last_write_time(path);
 
-                return hash_t{ path_relative, hash };
+                hashes.setHash(path_relative, { hash, time_modified } );
             }
-            ));
         }
-
-        // Collecting the results of the jobs
-        CCollectionHash hashes{ root };
-        for (auto& job : jobs_scheduled)
-        {
-            try {
-                const auto& result = job.get();
-                hashes.setHash(result.path, result.hash);
-            }
-            catch (const CryptoPP::Exception& e) {
-                const string message = string{ "Hashing error: " } + e.what();
-                logger.log(message);
-            }
+        catch (const CryptoPP::Exception& e) {
+            const string message = string{ "Hashing error: " } +e.what();
+            logger.log(message);
         }
       
         return hashes;
+    }
+
+
+    CCollectionHash CFactoryHashes::readHashes(const fs::path& json_path) const
+    {
+        if(!fs::is_regular_file(json_path)) {
+            throw ExceptionFatal{json_path.string() + " is not a file."};
+        }
+        pt::ptree root;
+        pt::read_json(json_path.string(), root);
+        const auto generator= root.get<string>(JSON_KEYS.GENERATOR);
+        if (generator != JSON_CONST_VALUES.GENERATOR) {
+            throw ExceptionFatal{ "This is not a proper file." };
+        }
+        CCollectionHash collection{ fs::path{ root.get<string>(JSON_KEYS.ROOT) }};
+
+        for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
+            const auto hash = file.second.get_child(JSON_KEYS.CONTENT.HASH).data();
+            const time_t time = std::stoll(file.second.get_child(JSON_KEYS.CONTENT.TIME).data());
+            collection.setHash(fs::path{ file.first }, { hash, time });
+        }
+        return collection;
     }
     
 

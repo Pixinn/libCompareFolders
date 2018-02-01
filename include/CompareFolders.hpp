@@ -25,7 +25,30 @@
 
 namespace cf
 {
+    /// @brief Description of the keys used in JSON files
+    static const struct  {
+        const std::string GENERATOR{ "Generator" };                 ///< Program used to generate the JSON file
+        const std::string ROOT{ "root" };                           ///< Root folder
+        const struct  {
+            const std::string IDENTICAL{ "identical" };             ///< Identical files
+            const std::string DIFFERENT{ "different" };             ///< Different files
+            const std::string UNIQUE_LEFT{ "unique left" };         ///< Files that are unique to the left
+            const std::string UNIQUE_RIGHT{ "unique right" };       ///< Files that are unique to the right
+            const std::string RENAMED{ "renamed and duplicates" };  ///< Files that are identical but where renamed, moved or duplicated
+            const std::string LEFT{ "left" };
+            const std::string RIGHT{ "right" };
+        } DIFF;                                                     ///< Differences betwwen two folders
+        const struct {
+            const std::string FILES{ "files" };                     ///< Files inside a folder
+            const std::string HASH{ "hash" };                       ///< Hash of a file's conte,t
+            const std::string TIME{ "last_modified" };              ///< Time of file's last modification
+        } CONTENT;                                                  ///< Description of a filder's content
+    } JSON_KEYS;
 
+    /// @brief Description of the const values that pmay be used in JSON files
+    static const struct {
+        const std::string GENERATOR{ "info.xtof.COMPARE_FOLDERS" };
+    } JSON_CONST_VALUES;
 
     /// @brief A fatal error occured
     class ExceptionFatal : public std::runtime_error
@@ -59,25 +82,39 @@ namespace cf
         static SLogErrorNull _Instance;
     };
 
+    /// @brief JSON file
+    typedef struct json_t {
+        json_t(const std::string& p_path) :
+            path{ p_path }
+        {     }
+        
+        const std::string path;
+    } json_t;
+
 
     /// @brief Holds the differences between two folders named *left* and *right*
     typedef struct diff_t
     {
-
+        /// @brief Custom operator== as std::list does not provide any
+        bool operator==(const diff_t& rhs) const noexcept;
+       
         /// @brief Files with different path but the very same content.
         /// Those files can have **duplicates** both left and right
-        typedef struct renamed_t {
+        typedef struct renamed_t
+        {
+            bool operator==(const renamed_t& rhs) const noexcept;
+            std::string hash;             ///< hash of the files
             std::list<std::string> left;  ///< Left files with the same content
             std::list<std::string> right; ///< Right files with the same content
-        }renamed_t;
+        } renamed_t;
 
-        const std::string root_left;               ///< Left directory root path
-        const std::string root_right;              ///< Right directory root path
-        const std::list<std::string> identical;    ///< Identical files
-        const std::list<std::string> different;    ///< Different files
-        const std::list<std::string> unique_left;  ///< Files that are unique to the left directory
-        const std::list<std::string> unique_right; ///< Files that are unique to the right directory
-        const std::list<renamed_t> renamed;     ///< Files with different reative path that have the same content
+        std::string root_left;               ///< Left directory root path
+        std::string root_right;              ///< Right directory root path
+        std::list<std::string> identical;    ///< Identical files
+        std::list<std::string> different;    ///< Different files
+        std::list<std::string> unique_left;  ///< Files that are unique to the left directory
+        std::list<std::string> unique_right; ///< Files that are unique to the right directory
+        std::list<renamed_t> renamed;        ///< Files with different reative path that have the same content
     } diff_t;
 
 
@@ -85,9 +122,32 @@ namespace cf
     /// @param left First folder's path
     /// @param right Second folder's path
     /// @param logErrors A logger to catch minor errors that could happen. By default, the NULL logger will ignore them.
-    /// @details Returns the differences between the two folders. Files can be identical or unique.
+    /// @details Returns the differences between the two folders.
     ///          Identical files but with a different names are also detected.
-    diff_t CompareFolders(const std::string& left, const std::string right, ILogError& logErrors = SLogErrorNull::GetInstance());
+    diff_t CompareFolders(const std::string& left, const std::string& right, ILogError& logErrors = SLogErrorNull::GetInstance());
+
+    /// @brief Compares the content of two JSON files
+    /// @param left First JSON file
+    /// @param right Second JSON file
+    /// @details Returns the differences between the content described by the JSON files.
+    ///          Identical files but with a different names are also detected.
+    diff_t CompareFolders(const json_t left, const json_t right);
+
+    /// @brief Compares the content of two JSON files
+    /// @param folder The folder path
+    /// @param json The JSON file
+    /// @param logErrors A logger to catch minor errors that could happen. By default, the NULL logger will ignore them.
+    /// @details Returns the differences between the content described by the JSON files.
+    ///          Identical files but with a different names are also detected.
+    diff_t CompareFolders(const std::string& folder, const json_t json, ILogError& logErrors = SLogErrorNull::GetInstance());
+
+    /// @brief Produces a JSON string with the difference between two folders
+    /// @param diff Difference between two folders
+    std::string Json(const diff_t diff);
+
+    /// @brief Analyzes the content of a folder and returns a JSON string
+    /// @param path Path of the folder to be analyzed
+    std::string ScanFolder(const std::string& path, ILogError& logErrors = SLogErrorNull::GetInstance());
 }
 
 #endif

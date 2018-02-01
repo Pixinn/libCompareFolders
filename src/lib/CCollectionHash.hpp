@@ -36,32 +36,43 @@ namespace  cf {
     class CCollectionHash
     {
     public:
-        /// @brief Constructor
+
+        /// @brief Informations about a file
+        struct info_t {
+            bool operator==(const info_t& rhs) {
+                return hash == rhs.hash;
+            }
+            std::string hash;           ///< Hash of the file's content
+            std::time_t time_modified;  ///< Time of last  modification
+        };
+
+        /// @brief Constructor from a given path
         /// @param root Root folder containing the hashed files
-        CCollectionHash(const fs::path& root) :
+        CCollectionHash(const fs::path& root) noexcept :
             _root{ root }
         {   }
         ~CCollectionHash() = default;
         
         /// @brief Adds a hash corresponding to a given path
-        void setHash(const fs::path& path, const std::string& hash);
+        void setHash(const fs::path& path, const info_t& info);
+
+        /// @brief Exports the hashes as a JSON string
+        std::string json() const;
         
         /// @brief Removes the path from the collection
         void removePath(const fs::path& path);
         
         /// @brief Compares the collection to another one.
         diff_t compare(CCollectionHash rhs) const;
-        
-        /// @brief Converts the stored paths and their hashes to a string
-        std::string toString() const;
 
         /// @brief returns the number of paths
         inline unsigned size() {
-            return _file_hashes.size();
+            return _file_infos.size();
         }
         
     private:
-        std::map<fs::path, std::string> _file_hashes;           ///< File pathes and their corresponding hash
+
+        std::map<fs::path, info_t> _file_infos;                 ///< File pathes and their corresponding info
         std::map<std::string, std::list<fs::path>> _hash_files; ///< Hash with the corresponding files. Useful for duplicate files.
         const fs::path _root;                                   ///< Root folder containing all the files hashed 
     };
