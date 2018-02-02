@@ -70,8 +70,8 @@ list<fs::path> Get_Identical_Files()
 string Random_String(const unsigned length)
 {
     const auto len = (1 + length) & 0xFF;
-    constexpr auto size_charset = 62u;;
-    constexpr array<char, size_charset> charset = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', \
+    constexpr auto size_charset = 62u;
+    constexpr array<unsigned char, size_charset> charset = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', \
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',\
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
     unique_ptr<char[]> buffer{ new char[len + 1] };
@@ -83,12 +83,29 @@ string Random_String(const unsigned length)
     return str;
 }
 
+
+/// @brief Returns a random wide string
+wstring Random_WString(const unsigned length)
+{
+    const auto len = (1 + length) & 0xFF;
+	const wstring charset{L"0123456789azertyuiopqsdfghjklmwxcvbnAZERTYUIOPQSDFGHJKLMWXCVBN&é²èçà@$£€"};
+	const auto size_charset = charset.size();
+	unique_ptr<wchar_t[]> buffer{ new wchar_t[len + 1] };
+	for (auto i = 0u; i < len; ++i) {
+        buffer[i] = charset[rand() % size_charset];
+    }
+	buffer[len] = L'\0';
+	const wstring str{ buffer.get() };
+    return str;
+}
+
+
 /// @brief Creates a random named folder
 /// @param parent Where to create the folder.
 fs::path Create_Random_Folder(const fs::path parent)
 {
     constexpr uint8_t max_len_name = 20u;
-    const auto name = parent / Random_String(1 + (rand() % (max_len_name-1)));
+    const auto name = parent / Random_WString(1 + (rand() % (max_len_name-1)));
     if (!fs::exists(name) && !fs::create_directory(name)) {
         throw runtime_error{ "Cannot create folder " + name.string() };
     }
@@ -109,9 +126,9 @@ vector<fs::path> Create_Random_Files(const fs::path folder, const uint8_t max_nb
     const unsigned nb_files = max_nb_files == 1 ? 1 : 1 + (rand() % (max_nb_files-1));
     for (auto i = 0u; i < nb_files; ++i)
     {
-        auto filepath = folder / Random_String(rand() % max_len_filename);
+        auto filepath = folder / Random_WString(rand() % max_len_filename);
         while (fs::exists(filepath)) {
-            filepath = folder / Random_String(rand() % max_len_filename);
+            filepath = folder / Random_WString(rand() % max_len_filename);
         }
         fs::ofstream stream{ filepath, fs::ofstream::binary };
         constexpr auto max_size_file = 65535u;
@@ -308,9 +325,9 @@ vector<fs::path> Rename_Files(const fs::path& folder, list<fs::path>& files_iden
         files_identical.erase(it);
         const auto parent = path_file.parent_path();
         const auto filename_old = path_file.filename();
-        auto filename_new = Random_String(20u);
-        while (filename_new == filename_old.string()) {
-            filename_new = Random_String(20u);
+        auto filename_new = Random_WString(20u);
+        while (filename_new == filename_old.wstring()) {
+            filename_new = Random_WString(20u);
         }
         const auto path_new = parent / filename_new;
         fs::rename(path_file, path_new);
@@ -330,10 +347,10 @@ void CleanUp(const pair<fs::path, fs::path> & paths)
     fs::remove_all(paths.second);
 }
 
-
+/*
 TEST_CASE("BAD FOLDER TO COMPARE")
 {
-    const auto folder_random = Random_String(20u) + Random_String(20u) + Random_String(20u);
+    const auto folder_random = Random_WString(20u) + Random_WString(20u) + Random_WString(20u);
     bool bad_left_folder = false;
     bool bad_right_foldder = false;
 
@@ -353,7 +370,7 @@ TEST_CASE("BAD FOLDER TO COMPARE")
     }
     REQUIRE(bad_left_folder == true);
 }
-
+*/
 
 
 TEST_CASE("NOMINAL")
