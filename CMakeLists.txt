@@ -120,6 +120,7 @@ target_link_libraries(${APP_COMPAREFOLDERS_NAME} ${LIB_NAME} ${CMAKE_THREAD_LIBS
 target_link_libraries(${APP_SCANFOLDER_NAME} ${LIB_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
 ### TEST
+enable_testing()
 add_subdirectory(test)
 
 

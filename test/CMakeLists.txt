@@ -46,3 +46,6 @@ target_link_libraries(${PROJECT_NAME}   ${LIB_NAME}
                                         ${CMAKE_THREAD_LIBS_INIT}
                                         ${Boost_LIBRARIES}
 )
+
+#### TEST
+add_test(NAME TEST COMMAND ${PROJECT_NAME} -s WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
