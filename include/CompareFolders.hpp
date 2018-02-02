@@ -27,32 +27,6 @@ namespace cf
 {
     /// @brief Description of the keys used in JSON files
     static const struct  {
-        const std::string GENERATOR{ "Generator" };                 ///< Program used to generate the JSON file
-        const std::string ROOT{ "root" };                           ///< Root folder
-        const struct  {
-            const std::string IDENTICAL{ "identical" };             ///< Identical files
-            const std::string DIFFERENT{ "different" };             ///< Different files
-            const std::string UNIQUE_LEFT{ "unique left" };         ///< Files that are unique to the left
-            const std::string UNIQUE_RIGHT{ "unique right" };       ///< Files that are unique to the right
-            const std::string RENAMED{ "renamed and duplicates" };  ///< Files that are identical but where renamed, moved or duplicated
-            const std::string LEFT{ "left" };
-            const std::string RIGHT{ "right" };
-        } DIFF;                                                     ///< Differences betwwen two folders
-        const struct {
-            const std::string FILES{ "files" };                     ///< Files inside a folder
-            const std::string HASH{ "hash" };                       ///< Hash of a file's conte,t
-            const std::string TIME{ "last_modified" };              ///< Time of file's last modification
-        } CONTENT;                                                  ///< Description of a filder's content
-    } JSON_KEYS;
-
-    /// @brief Description of the const values that pmay be used in JSON files
-    static const struct {
-        const std::string GENERATOR{ "info.xtof.COMPARE_FOLDERS" };
-    } JSON_CONST_VALUES;
-	
-	
-	    /// @brief Description of the keys used in JSON files
-    static const struct  {
         const std::wstring GENERATOR{ L"Generator" };                 ///< Program used to generate the JSON file
         const std::wstring ROOT{ L"root" };                           ///< Root folder
         const struct  {
@@ -63,18 +37,18 @@ namespace cf
             const std::wstring RENAMED{ L"renamed and duplicates" };  ///< Files that are identical but where renamed, moved or duplicated
             const std::wstring LEFT{ L"left" };
             const std::wstring RIGHT{ L"right" };
-        } DIFF;                                                     ///< Differences betwwen two folders
+        } DIFF;                                                       ///< Differences betwwen two folders
         const struct {
             const std::wstring FILES{ L"files" };                     ///< Files inside a folder
             const std::wstring HASH{ L"hash" };                       ///< Hash of a file's conte,t
             const std::wstring TIME{ L"last_modified" };              ///< Time of file's last modification
-        } CONTENT;                                                  ///< Description of a filder's content
-    } WJSON_KEYS;
+        } CONTENT;                                                    ///< Description of a filder's content
+    } JSON_KEYS;
 
     /// @brief Description of the const values that pmay be used in JSON files
     static const struct {
         const std::wstring GENERATOR{ L"info.xtof.COMPARE_FOLDERS" };
-    } WJSON_CONST_VALUES;
+    } JSON_CONST_VALUES;
 
     /// @brief A fatal error occured
     class ExceptionFatal : public std::runtime_error
@@ -157,6 +131,7 @@ namespace cf
     /// @param right Second JSON file
     /// @details Returns the differences between the content described by the JSON files.
     ///          Identical files but with a different names are also detected.
+	///			 **Please note** that a json file in UTF-8 **with BOM** won't be correctly parsed!!
     diff_t CompareFolders(const json_t left, const json_t right);
 
     /// @brief Compares the content of two JSON files
@@ -165,15 +140,23 @@ namespace cf
     /// @param logErrors A logger to catch minor errors that could happen. By default, the NULL logger will ignore them.
     /// @details Returns the differences between the content described by the JSON files.
     ///          Identical files but with a different names are also detected.
+	///			 **Please note** that a json file in UTF-8 **with BOM** won't be correctly parsed!!
     diff_t CompareFolders(const std::string& folder, const json_t json, ILogError& logErrors = SLogErrorNull::GetInstance());
 
-    /// @brief Produces a JSON string with the difference between two folders
+    /// @brief Produces a JSON wstring with the difference between two folders
     /// @param diff Difference between two folders
     std::wstring Json(const diff_t diff);
 
     /// @brief Analyzes the content of a folder and returns a JSON string
     /// @param path Path of the folder to be analyzed
     std::wstring ScanFolder(const std::string& path, ILogError& logErrors = SLogErrorNull::GetInstance());
+	
+	/// @brief 	Creates a new file containing an UTF-8 representation of the provided wstring
+	/// @details The resulting file will be UTF-8 which *may* be headed by a **BOM**
+	/// @param stream 	Stream handling the file to create
+	/// @param str 		wide string to encode in UTF-8 then write to disk
+	/// @param withBOM 	Is writing a BOM header to the UTF-8 file required? (default: false)
+	void WriteWString(std::ofstream& stream, const std::wstring& str, const bool withBOM = false);
 }
 
 #endif

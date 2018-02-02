@@ -18,6 +18,7 @@
 #include <list>
 #include <vector>
 #include <future>
+#include <codecvt>
 
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -77,18 +78,19 @@ namespace cf {
         if(!fs::is_regular_file(json_path)) {
             throw ExceptionFatal{json_path.string() + " is not a file."};
         }
-        pt::ptree root;
-        pt::read_json(json_path.string(), root);
-        const auto generator= root.get<string>(JSON_KEYS.GENERATOR);
+		wstring_convert<codecvt_utf8_utf16<wchar_t>> codec_utf8;
+        pt::wptree root;
+		pt::read_json(json_path.string(), root);
+        const auto generator= root.get<wstring>(JSON_KEYS.GENERATOR);
         if (generator != JSON_CONST_VALUES.GENERATOR) {
             throw ExceptionFatal{ "This is not a proper file." };
         }
-        CCollectionHash collection{ fs::path{ root.get<string>(JSON_KEYS.ROOT) }};
+        CCollectionHash collection{ fs::path{ root.get<wstring>(JSON_KEYS.ROOT) }};
 
         for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
             const auto hash = file.second.get_child(JSON_KEYS.CONTENT.HASH).data();
             const time_t time = std::stoll(file.second.get_child(JSON_KEYS.CONTENT.TIME).data());
-            collection.setHash(fs::path{ file.first }, { hash, time });
+            collection.setHash(fs::path{ file.first }, {codec_utf8.to_bytes(hash) , time });
         }
         return collection;
     }

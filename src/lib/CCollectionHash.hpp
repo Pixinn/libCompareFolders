@@ -61,7 +61,7 @@ namespace  cf {
         //std::string json() const;
 		
 		/// @brief Exports the hashes as a JSON string
-        std::wstring wjson() const;
+        std::wstring json() const;
         
         /// @brief Removes the path from the collection
         void removePath(const fs::path& path);

@@ -16,6 +16,9 @@
 17 */
 
 #include <sstream>
+#include <iostream>
+#include <codecvt>
+#include <array>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -31,10 +34,11 @@ namespace pt = boost::property_tree;
 
 namespace cf
 {
+	/// @details The JSON is coded in wstring in order to handle any special character in the filepaths
     wstring Json(const diff_t diff)
     {
         pt::wptree root;
-        root.put(WJSON_KEYS.GENERATOR, WJSON_CONST_VALUES.GENERATOR);
+        root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);
 
         // identical files
         if (!diff.identical.empty()) {
@@ -44,7 +48,7 @@ namespace cf
                 node_entry.put(wstring{}, entry);
                 node_identical.push_back(make_pair(wstring{}, node_entry));
             }
-            root.add_child(WJSON_KEYS.DIFF.IDENTICAL, node_identical);
+            root.add_child(JSON_KEYS.DIFF.IDENTICAL, node_identical);
         }
 
         // different files
@@ -55,7 +59,7 @@ namespace cf
                 node_entry.put(wstring{}, entry);
                 node_different.push_back(make_pair(wstring{}, node_entry));
             }
-            root.add_child(WJSON_KEYS.DIFF.DIFFERENT, node_different);
+            root.add_child(JSON_KEYS.DIFF.DIFFERENT, node_different);
         }
 
         // files unique to the left
@@ -66,7 +70,7 @@ namespace cf
                 node_entry.put(wstring{}, entry);
                 node_unique_left.push_back(make_pair(wstring{}, node_entry));
             }
-            root.add_child(WJSON_KEYS.DIFF.UNIQUE_LEFT, node_unique_left);
+            root.add_child(JSON_KEYS.DIFF.UNIQUE_LEFT, node_unique_left);
         }
 
         // files unique to the right
@@ -77,7 +81,7 @@ namespace cf
                 node_entry.put(wstring{}, entry);
                 node_unique_right.push_back(make_pair(wstring{}, node_entry));
             }
-            root.add_child(WJSON_KEYS.DIFF.UNIQUE_RIGHT, node_unique_right);
+            root.add_child(JSON_KEYS.DIFF.UNIQUE_RIGHT, node_unique_right);
         }
 
         // renamed and duplicates
@@ -92,7 +96,7 @@ namespace cf
                     node_entry.put(wstring{}, entry_left);
                     left.push_back(make_pair(wstring{}, node_entry));
                 }
-                names.push_back(make_pair(WJSON_KEYS.DIFF.LEFT, left));
+                names.push_back(make_pair(JSON_KEYS.DIFF.LEFT, left));
 
                 pt::wptree right;
                 for (const auto& entry_right : entry.right) {
@@ -100,10 +104,10 @@ namespace cf
                     node_entry.put(wstring{}, entry_right);
                     right.push_back(make_pair(wstring{}, node_entry));
                 }
-                names.push_back(make_pair(WJSON_KEYS.DIFF.RIGHT, right));
+                names.push_back(make_pair(JSON_KEYS.DIFF.RIGHT, right));
                 renamed.push_back(make_pair(wstring{begin(entry.hash), end(entry.hash)}, names)); // Conversion ok because, hashes is plains 7-bit ASCII
             }
-            root.add_child(WJSON_KEYS.DIFF.RENAMED, renamed);
+            root.add_child(JSON_KEYS.DIFF.RENAMED, renamed);
         }
 
         // Get the string and returns
@@ -111,4 +115,17 @@ namespace cf
         pt::write_json(stream, root);
         return stream.str();
     }
+	
+	
+	
+	/// --------
+	void WriteWString(std::ofstream& stream, const std::wstring& str, const bool withBOM)
+	{
+		if(withBOM) {
+			static const array<uint8_t, 3u> BOM = { 0xEF, 0xBB, 0xBF };
+			stream.write(reinterpret_cast<char*>(const_cast<uint8_t*>(BOM.data())), BOM.size());
+		}
+		wstring_convert<std::codecvt_utf8<wchar_t>> codec_to_utf8;
+		stream << codec_to_utf8.to_bytes(str);
+	}
 }

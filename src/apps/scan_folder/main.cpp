@@ -19,9 +19,7 @@
 #include <cstdint>
 #include <array>
 #include <string>
-#include <iostream>
 #include <fstream>
-#include <codecvt>
 
 
 #include <tclap/CmdLine.h>
@@ -69,14 +67,9 @@ int main(int argc, char* argv[])
             throw runtime_error{ "Cannot write to " + path_output };
         }
 		
-		array<uint8_t, 3u> bom = { 0xEF, 0xBB, 0xBF };
-		wstring_convert<std::codecvt_utf8<wchar_t>> codec_to_utf8;
-		stream.write(reinterpret_cast<char*>(bom.data()), 3);
-        stream << codec_to_utf8.to_bytes(json);
-        stream.close();
+		cf::WriteWString(stream, json);
     }
-    catch (const exception& e)
-    {
+    catch (const exception& e) {
         cout << e.what() << endl;
     }
 

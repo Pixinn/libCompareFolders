@@ -409,53 +409,57 @@ TEST_CASE("JSON")
     const fs::path path_json_left{ fs::temp_directory_path() / "compare_folder_left.json" };
     const fs::path path_json_right{ fs::temp_directory_path() / "compare_folder_right.json" };
     
-    // Save folder 1 as a JSON file    
-    fs::fstream stream_json_left{ path_json_left, ios::out };
-    if (!stream_json_left) {
-        throw(runtime_error{ "Cannot create " + path_json_left.string() + " required to complete the test." });
-    }
-    auto json_left = cf::ScanFolder(Folders.first.string());
-    stream_json_left << json_left;
-    stream_json_left.close();
-    // Save folder 2 as a JSON file    
-    fs::fstream stream_json_right{ path_json_right, ios::out };
-    if (!stream_json_right) {
-        throw(runtime_error{ "Cannot create " + path_json_right.string() + " required to complete the test." });
-    }
-    auto json_right = cf::ScanFolder(Folders.second.string());
-    stream_json_right << json_right;
-    stream_json_right.close();
+	{
+		// Save folder 1 as a JSON file    
+		std::ofstream stream_json_left{ path_json_left.string(), ios::out };
+		if (!stream_json_left) {
+			throw(runtime_error{ "Cannot create " + path_json_left.string() + " required to complete the test." });
+		}
+		auto json_left = cf::ScanFolder(Folders.first.string());
+		cf::WriteWString(stream_json_left, json_left);
+		stream_json_left.close();
+		// Save folder 2 as a JSON file    
+		std::ofstream stream_json_right{ path_json_right.string(), ios::out };
+		if (!stream_json_right) {
+			throw(runtime_error{ "Cannot create " + path_json_right.string() + " required to complete the test." });
+		}
+		auto json_right = cf::ScanFolder(Folders.second.string());
+		cf::WriteWString(stream_json_right, json_right);
+		stream_json_right.close();
 
-    // Use the JSON files to compare the folders
-    const auto diff = cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
+		// Use the JSON files to compare the folders
+		const auto diff = cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
 
     REQUIRE(diff == Diff);
+	}
 
-    // Corrupt the json file
-    // 1 - Remove the Generator field
-    pt::ptree root;
-    stream_json_left.open(path_json_left, ios::in);
-    pt::read_json(stream_json_left, root);
-    stream_json_left.close();
+	{
+		// Corrupt the json file
+		// 1 - Remove the Generator field
+		pt::ptree root;
+		std::fstream stream_json_left{ path_json_left.string(), ios::in };
+		pt::read_json(stream_json_left, root);
+		stream_json_left.close();
 
-    auto& generator = root.get_child("Generator");
-    generator.put_value("CORRUPTED");
-    stream_json_left.open(path_json_left, ios::out);
-    pt::write_json(stream_json_left, root);
-    stream_json_left.close();
-    bool exception = false;
-    try {
-        cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
-    }
-    catch (const cf::ExceptionFatal&) {
-        exception = true;
-    }
-    catch (...) {
-        cerr << "Unexpected Exception received in test \"JSON\"" << endl;
-        exception = false;
-    }
+		auto& generator = root.get_child("Generator");
+		generator.put_value("CORRUPTED");
+		stream_json_left.open(path_json_left.string(), ios::out);
+		pt::write_json(stream_json_left, root);
+		stream_json_left.close();
+		bool exception = false;
+		try {
+			cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
+		}
+		catch (const cf::ExceptionFatal&) {
+			exception = true;
+		}
+		catch (...) {
+			cerr << "Unexpected Exception received in test \"JSON\"" << endl;
+			exception = false;
+		}
 
-    REQUIRE(exception == true);
+		REQUIRE(exception == true);
+	}
 
 }
 
