@@ -185,6 +185,27 @@ namespace  cf
         pt::write_json(stream, root);
         return stream.str();
     }
+	
+	wstring CCollectionHash::wjson() const
+    {
+        pt::wptree root;
+        root.put(WJSON_KEYS.GENERATOR, WJSON_CONST_VALUES.GENERATOR);
+        root.put(WJSON_KEYS.ROOT, _root.wstring());
+        pt::wptree node_files;
+        for (const auto& entry : _file_infos) {
+            pt::wptree node_info;
+            node_info.put(WJSON_KEYS.CONTENT.HASH, wstring{begin(entry.second.hash), end(entry.second.hash)}); // Workd because hash is plain 7-bit ASCII!
+            node_info.put(WJSON_KEYS.CONTENT.TIME, entry.second.time_modified);
+            node_files.push_back(pt::wptree::value_type(entry.first.wstring(), node_info)); // not using "put()" as '.' is its delimiter
+        }
+        root.add_child(WJSON_KEYS.CONTENT.FILES, node_files);
+
+        // Get the string and returns
+        wstringstream stream{ ios_base::out };
+        pt::write_json(stream, root);
+        return stream.str();
+    }
+    
     
     
 

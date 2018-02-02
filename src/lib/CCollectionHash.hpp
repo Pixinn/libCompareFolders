@@ -19,6 +19,7 @@
 #define _SRC_CCollectionHash_hpp__
 
 #include <map>
+#include <vector>
 #include <string>
 #include <mutex>
 #include <boost/filesystem.hpp>
@@ -58,6 +59,9 @@ namespace  cf {
 
         /// @brief Exports the hashes as a JSON string
         std::string json() const;
+		
+		/// @brief Exports the hashes as a JSON string
+        std::wstring wjson() const;
         
         /// @brief Removes the path from the collection
         void removePath(const fs::path& path);

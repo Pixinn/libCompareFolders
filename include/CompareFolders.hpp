@@ -49,6 +49,32 @@ namespace cf
     static const struct {
         const std::string GENERATOR{ "info.xtof.COMPARE_FOLDERS" };
     } JSON_CONST_VALUES;
+	
+	
+	    /// @brief Description of the keys used in JSON files
+    static const struct  {
+        const std::wstring GENERATOR{ L"Generator" };                 ///< Program used to generate the JSON file
+        const std::wstring ROOT{ L"root" };                           ///< Root folder
+        const struct  {
+            const std::wstring IDENTICAL{ L"identical" };             ///< Identical files
+            const std::wstring DIFFERENT{ L"different" };             ///< Different files
+            const std::wstring UNIQUE_LEFT{ L"unique left" };         ///< Files that are unique to the left
+            const std::wstring UNIQUE_RIGHT{ L"unique right" };       ///< Files that are unique to the right
+            const std::wstring RENAMED{ L"renamed and duplicates" };  ///< Files that are identical but where renamed, moved or duplicated
+            const std::wstring LEFT{ L"left" };
+            const std::wstring RIGHT{ L"right" };
+        } DIFF;                                                     ///< Differences betwwen two folders
+        const struct {
+            const std::wstring FILES{ L"files" };                     ///< Files inside a folder
+            const std::wstring HASH{ L"hash" };                       ///< Hash of a file's conte,t
+            const std::wstring TIME{ L"last_modified" };              ///< Time of file's last modification
+        } CONTENT;                                                  ///< Description of a filder's content
+    } WJSON_KEYS;
+
+    /// @brief Description of the const values that pmay be used in JSON files
+    static const struct {
+        const std::wstring GENERATOR{ L"info.xtof.COMPARE_FOLDERS" };
+    } WJSON_CONST_VALUES;
 
     /// @brief A fatal error occured
     class ExceptionFatal : public std::runtime_error
@@ -147,7 +173,7 @@ namespace cf
 
     /// @brief Analyzes the content of a folder and returns a JSON string
     /// @param path Path of the folder to be analyzed
-    std::string ScanFolder(const std::string& path, ILogError& logErrors = SLogErrorNull::GetInstance());
+    std::wstring ScanFolder(const std::string& path, ILogError& logErrors = SLogErrorNull::GetInstance());
 }
 
 #endif

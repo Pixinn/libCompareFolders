@@ -168,10 +168,10 @@ diff_t cf::CompareFolders(const std::string& folder, const json_t json, ILogErro
 }
 
 
-string cf::ScanFolder(const string& path, ILogError& logger)
+wstring cf::ScanFolder(const string& path, ILogError& logger)
 {
     const auto folder = path_folder(path);
     const cf::CFactoryHashes factoryHashes{};
     const auto properties = factoryHashes.computeHashes(folder, logger);
-    return properties.json();
+    return properties.wjson();
 }
