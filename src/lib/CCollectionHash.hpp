@@ -58,7 +58,7 @@ namespace  cf {
         void setHash(const fs::path& path, const info_t& info);
 
         /// @brief Exports the hashes as a JSON string
-        std::string json() const;
+        //std::string json() const;
 		
 		/// @brief Exports the hashes as a JSON string
         std::wstring wjson() const;

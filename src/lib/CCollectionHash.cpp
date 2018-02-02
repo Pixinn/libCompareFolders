@@ -94,10 +94,10 @@ namespace  cf
     diff_t CCollectionHash::compare(CCollectionHash rhs) const
     {
 
-        list<string> identical;
-        list<string> different;
-        list<string> unique_left;
-        list<string> unique_right;
+        list<wstring> identical;
+        list<wstring> different;
+        list<wstring> unique_left;
+        list<wstring> unique_right;
         list<diff_t::renamed_t> list_renamed;
 
         for (const auto& file_info : _file_infos)
@@ -106,10 +106,10 @@ namespace  cf
             if (file_hash_right != rhs._file_infos.end()) // file with the same relative path
             {
                 if (file_hash_right->second == file_info.second) { // identical
-                    identical.push_back(file_info.first.string());
+                    identical.push_back(file_info.first.wstring());
                 }
                 else { // different
-                    different.push_back(file_info.first.string());
+                    different.push_back(file_info.first.wstring());
                 }
             }
             else
@@ -118,7 +118,7 @@ namespace  cf
                 const auto& hash = file_info.second.hash;
                 const auto hash_files_right = rhs._hash_files.find(hash);
                 if (hash_files_right == std::end(rhs._hash_files)) {
-                    unique_left.push_back(file_info.first.string()); // Nope: it's unique to the left
+                    unique_left.push_back(file_info.first.wstring()); // Nope: it's unique to the left
                 }
                 else
                 {  // Found some match: same file with a different relative path / filename
@@ -126,10 +126,10 @@ namespace  cf
                     renamed.hash = hash;
                     const auto& hash_files_left = _hash_files.find(hash);
                     for (const auto& file : hash_files_left->second) {
-                        renamed.left.push_back(file.string());
+                        renamed.left.push_back(file.wstring());
                     }
                     for (const auto& file : hash_files_right->second) {
-                        renamed.right.push_back(file.string());
+                        renamed.right.push_back(file.wstring());
                     }
                     list_renamed.push_back(renamed);
                 }
@@ -138,7 +138,7 @@ namespace  cf
 
         for (const auto& file_info : rhs._file_infos)
         {
-            const auto& path = file_info.first.string();
+            const auto& path = file_info.first.wstring();
             //Is the file in the identical or different lists?
             const auto isIdentical = (find(begin(identical), end(identical), path) != end(identical));
             const auto isDifferent = (find(begin(different), end(different), path) != end(different));
@@ -155,8 +155,8 @@ namespace  cf
         
         
         return diff_t{
-            _root.string(),
-            rhs._root.string(),
+            _root.wstring(),
+            rhs._root.wstring(),
             identical,
             different,
             unique_left,
@@ -166,7 +166,7 @@ namespace  cf
     }
 
 
-    string CCollectionHash::json() const
+/*    string CCollectionHash::json() const
     {
         pt::ptree root;
         root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);
@@ -185,6 +185,7 @@ namespace  cf
         pt::write_json(stream, root);
         return stream.str();
     }
+	*/
 	
 	wstring CCollectionHash::wjson() const
     {

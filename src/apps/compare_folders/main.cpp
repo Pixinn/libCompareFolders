@@ -19,8 +19,9 @@
 
 #include <iostream>
 #include <fstream>
-#include <list>
+#include <array>
 #include <string>
+#include <codecvt>
 
 #include <tclap/CmdLine.h>
 
@@ -66,7 +67,7 @@ int main(int argc, char* argv[])
 
         // Execute       
         LogError logErr;
-        string result;
+        wstring result;
 
         // Compare two folders
         if (path_folders.size() == 2u) 
@@ -93,16 +94,20 @@ int main(int argc, char* argv[])
             result = cf::Json(cf::CompareFolders(cf::json_t{ path_json[0] }, cf::json_t{ path_json[1] }));
         }
 
-        // Output th eresult
+        // Output the result
+		wstring_convert<std::codecvt_utf8<wchar_t>> codec_to_utf8;
         if (path_output.empty())  {
-            cout << result;
+            cout << codec_to_utf8.to_bytes(result);
         }
         else {
             ofstream stream{ path_output , ios::out };
             if (!stream) {
                 throw runtime_error{ "Cannot write to " + path_output };
             }
-            stream << result;
+			
+			array<uint8_t, 3u> bom = { 0xEF, 0xBB, 0xBF };
+			stream.write(reinterpret_cast<char*>(bom.data()), 3);
+            stream << codec_to_utf8.to_bytes(result);
             stream.close();
         }
     }

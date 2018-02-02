@@ -109,11 +109,11 @@ namespace cf
     };
 
     /// @brief JSON file
+	/// @details This is a mere facade to the path
     typedef struct json_t {
         json_t(const std::string& p_path) :
             path{ p_path }
-        {     }
-        
+        {     }        
         const std::string path;
     } json_t;
 
@@ -130,16 +130,16 @@ namespace cf
         {
             bool operator==(const renamed_t& rhs) const noexcept;
             std::string hash;             ///< hash of the files
-            std::list<std::string> left;  ///< Left files with the same content
-            std::list<std::string> right; ///< Right files with the same content
+            std::list<std::wstring> left;  ///< Left files with the same content
+            std::list<std::wstring> right; ///< Right files with the same content
         } renamed_t;
 
-        std::string root_left;               ///< Left directory root path
-        std::string root_right;              ///< Right directory root path
-        std::list<std::string> identical;    ///< Identical files
-        std::list<std::string> different;    ///< Different files
-        std::list<std::string> unique_left;  ///< Files that are unique to the left directory
-        std::list<std::string> unique_right; ///< Files that are unique to the right directory
+        std::wstring root_left;               ///< Left directory root path
+        std::wstring root_right;              ///< Right directory root path
+        std::list<std::wstring> identical;    ///< Identical files
+        std::list<std::wstring> different;    ///< Different files
+        std::list<std::wstring> unique_left;  ///< Files that are unique to the left directory
+        std::list<std::wstring> unique_right; ///< Files that are unique to the right directory
         std::list<renamed_t> renamed;        ///< Files with different reative path that have the same content
     } diff_t;
 
@@ -169,7 +169,7 @@ namespace cf
 
     /// @brief Produces a JSON string with the difference between two folders
     /// @param diff Difference between two folders
-    std::string Json(const diff_t diff);
+    std::wstring Json(const diff_t diff);
 
     /// @brief Analyzes the content of a folder and returns a JSON string
     /// @param path Path of the folder to be analyzed

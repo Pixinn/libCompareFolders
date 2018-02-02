@@ -31,83 +31,83 @@ namespace pt = boost::property_tree;
 
 namespace cf
 {
-    string Json(const diff_t diff)
+    wstring Json(const diff_t diff)
     {
-        pt::ptree root;
-        root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);
+        pt::wptree root;
+        root.put(WJSON_KEYS.GENERATOR, WJSON_CONST_VALUES.GENERATOR);
 
         // identical files
         if (!diff.identical.empty()) {
-            pt::ptree node_identical;
+            pt::wptree node_identical;
             for (const auto& entry : diff.identical) {
-                pt::ptree node_entry;
-                node_entry.put("", entry);
-                node_identical.push_back(make_pair("", node_entry));
+                pt::wptree node_entry;
+                node_entry.put(wstring{}, entry);
+                node_identical.push_back(make_pair(wstring{}, node_entry));
             }
-            root.add_child(JSON_KEYS.DIFF.IDENTICAL, node_identical);
+            root.add_child(WJSON_KEYS.DIFF.IDENTICAL, node_identical);
         }
 
         // different files
         if (!diff.different.empty()) {
-            pt::ptree node_different;
+            pt::wptree node_different;
             for (const auto& entry : diff.different) {
-                pt::ptree node_entry;
-                node_entry.put("", entry);
-                node_different.push_back(make_pair("", node_entry));
+                pt::wptree node_entry;
+                node_entry.put(wstring{}, entry);
+                node_different.push_back(make_pair(wstring{}, node_entry));
             }
-            root.add_child(JSON_KEYS.DIFF.DIFFERENT, node_different);
+            root.add_child(WJSON_KEYS.DIFF.DIFFERENT, node_different);
         }
 
         // files unique to the left
         if (!diff.unique_left.empty()) {
-            pt::ptree node_unique_left;
+            pt::wptree node_unique_left;
             for (const auto& entry : diff.unique_left) {
-                pt::ptree node_entry;
-                node_entry.put("", entry);
-                node_unique_left.push_back(make_pair("", node_entry));
+                pt::wptree node_entry;
+                node_entry.put(wstring{}, entry);
+                node_unique_left.push_back(make_pair(wstring{}, node_entry));
             }
-            root.add_child(JSON_KEYS.DIFF.UNIQUE_LEFT, node_unique_left);
+            root.add_child(WJSON_KEYS.DIFF.UNIQUE_LEFT, node_unique_left);
         }
 
         // files unique to the right
         if (!diff.unique_right.empty()) {
-            pt::ptree node_unique_right;
+            pt::wptree node_unique_right;
             for (const auto& entry : diff.unique_right) {
-                pt::ptree node_entry;
-                node_entry.put("", entry);
-                node_unique_right.push_back(make_pair("", node_entry));
+                pt::wptree node_entry;
+                node_entry.put(wstring{}, entry);
+                node_unique_right.push_back(make_pair(wstring{}, node_entry));
             }
-            root.add_child(JSON_KEYS.DIFF.UNIQUE_RIGHT, node_unique_right);
+            root.add_child(WJSON_KEYS.DIFF.UNIQUE_RIGHT, node_unique_right);
         }
 
         // renamed and duplicates
         if (!diff.renamed.empty()) {
-            pt::ptree renamed;
+            pt::wptree renamed;
             for (const auto& entry : diff.renamed)
             {
-                pt::ptree names;
-                pt::ptree left;
+                pt::wptree names;
+                pt::wptree left;
                 for (const auto& entry_left : entry.left) {
-                    pt::ptree node_entry;
-                    node_entry.put("", entry_left);
-                    left.push_back(make_pair("", node_entry));
+                    pt::wptree node_entry;
+                    node_entry.put(wstring{}, entry_left);
+                    left.push_back(make_pair(wstring{}, node_entry));
                 }
-                names.push_back(make_pair(JSON_KEYS.DIFF.LEFT, left));
+                names.push_back(make_pair(WJSON_KEYS.DIFF.LEFT, left));
 
-                pt::ptree right;
+                pt::wptree right;
                 for (const auto& entry_right : entry.right) {
-                    pt::ptree node_entry;
-                    node_entry.put("", entry_right);
-                    right.push_back(make_pair("", node_entry));
+                    pt::wptree node_entry;
+                    node_entry.put(wstring{}, entry_right);
+                    right.push_back(make_pair(wstring{}, node_entry));
                 }
-                names.push_back(make_pair(JSON_KEYS.DIFF.RIGHT, right));
-                renamed.push_back(make_pair(entry.hash, names));
+                names.push_back(make_pair(WJSON_KEYS.DIFF.RIGHT, right));
+                renamed.push_back(make_pair(wstring{begin(entry.hash), end(entry.hash)}, names)); // Conversion ok because, hashes is plains 7-bit ASCII
             }
-            root.add_child(JSON_KEYS.DIFF.RENAMED, renamed);
+            root.add_child(WJSON_KEYS.DIFF.RENAMED, renamed);
         }
 
         // Get the string and returns
-        stringstream stream{ ios_base::out };
+        wstringstream stream{ ios_base::out };
         pt::write_json(stream, root);
         return stream.str();
     }

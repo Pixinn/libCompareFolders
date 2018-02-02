@@ -18,7 +18,6 @@
 
 #include <cstdint>
 #include <array>
-#include <list>
 #include <string>
 #include <iostream>
 #include <fstream>
