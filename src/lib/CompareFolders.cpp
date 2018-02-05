@@ -117,7 +117,6 @@ inline const fs::path path_folder(const string str_path)
     return path;
 }
 
-
 // ===== PUBLIC FUNCTIONS
 
 

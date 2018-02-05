@@ -1,4 +1,4 @@
-/*
+﻿/*
 3  *  Copyright (C) 2017 Christophe Meneboeuf <christophe@xtof.info>
 4  *
 5  *  This program is free software: you can redistribute it and/or modify
@@ -88,7 +88,11 @@ string Random_String(const unsigned length)
 wstring Random_WString(const unsigned length)
 {
     const auto len = (1 + length) & 0xFF;
-	const wstring charset{L"0123456789azertyuiopqsdfghjklmwxcvbnAZERTYUIOPQSDFGHJKLMWXCVBN&é²èçà@$£€"};
+    constexpr array<wchar_t, 100u> charset = { 	L'0',L'1',L'2',L'3',L'4',L'5',L'6',L'7',L'8',L'9',
+                                                L'a',L'z',L'e',L'r',L't',L'y',L'u',L'i',L'o',L'p',L'q',L's',L'd',L'f',L'g',L'h',L'j',L'k',L'l',L'm',L'w',L'x',L'c',L'v',L'b',L'n',
+                                                L'A',L'Z',L'E',L'R',L'T',L'Y',L'U',L'I',L'O',L'P',L'Q',L'S',L'D',L'F',L'G',L'H',L'J',L'K',L'L',L'M',L'W',L'X',L'C',L'V',L'B',L'N',                                                
+                                                L'α',L'β',L'γ',L'δ',L'ε',L'ख',L'ग',L'घ',L'ङ',L'च',L'僃',L'僄',L'僅',L'僆',L'僇',L'љ',L'њ',L'ћ',L'ќ',L'ѝ',L'س',L'ڇ',L'ڲ',L'غ',L'؁',
+                                                L'.',L'&',L'é',L'²',L'è',L'ç',L'à',L'@',L'$',L'£',L'€',L'☂',L'☣'};
 	const auto size_charset = charset.size();
 	unique_ptr<wchar_t[]> buffer{ new wchar_t[len + 1] };
 	for (auto i = 0u; i < len; ++i) {
@@ -347,10 +351,10 @@ void CleanUp(const pair<fs::path, fs::path> & paths)
     fs::remove_all(paths.second);
 }
 
-/*
+
 TEST_CASE("BAD FOLDER TO COMPARE")
 {
-    const auto folder_random = Random_WString(20u) + Random_WString(20u) + Random_WString(20u);
+    const auto folder_random = Random_String(20u) + Random_String(20u) + Random_String(20u);
     bool bad_left_folder = false;
     bool bad_right_foldder = false;
 
@@ -370,7 +374,7 @@ TEST_CASE("BAD FOLDER TO COMPARE")
     }
     REQUIRE(bad_left_folder == true);
 }
-*/
+
 
 
 TEST_CASE("NOMINAL")

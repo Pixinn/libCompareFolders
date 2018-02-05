@@ -6,4 +6,5 @@
 
 doc
 .vs/
+.vscode/
 .DS_Store
