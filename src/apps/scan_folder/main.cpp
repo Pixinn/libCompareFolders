@@ -16,11 +16,11 @@
 17 */
 
 
-
-#include <iostream>
-#include <list>
+#include <cstdint>
+#include <array>
 #include <string>
 #include <fstream>
+
 
 #include <tclap/CmdLine.h>
 
@@ -66,11 +66,10 @@ int main(int argc, char* argv[])
         if (!stream) {
             throw runtime_error{ "Cannot write to " + path_output };
         }
-        stream << json;
-        stream.close();
+		
+		cf::WriteWString(stream, json);
     }
-    catch (const exception& e)
-    {
+    catch (const exception& e) {
         cout << e.what() << endl;
     }
 

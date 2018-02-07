@@ -49,7 +49,7 @@ add_executable(${APP_SCANFOLDER_NAME}      ${SRC_DIR_APPS}/${APP_SCANFOLDER_NAME
 
 # common
 set_property(GLOBAL PROPERTY CXX_STANDARD 11)
-set(COMPILE_OPTIONS_MSVC "/W4" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
+set(COMPILE_OPTIONS_MSVC "/W4" "/MP" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
 set(COMPILE_OPTIONS_UNIX "-std=c++11" "-Wall"  "$<$<CONFIG:Release>:-Werror>")
 
 # library

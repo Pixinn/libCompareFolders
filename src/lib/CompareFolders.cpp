@@ -117,7 +117,6 @@ inline const fs::path path_folder(const string str_path)
     return path;
 }
 
-
 // ===== PUBLIC FUNCTIONS
 
 
@@ -168,7 +167,7 @@ diff_t cf::CompareFolders(const std::string& folder, const json_t json, ILogErro
 }
 
 
-string cf::ScanFolder(const string& path, ILogError& logger)
+wstring cf::ScanFolder(const string& path, ILogError& logger)
 {
     const auto folder = path_folder(path);
     const cf::CFactoryHashes factoryHashes{};

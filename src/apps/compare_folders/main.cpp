@@ -19,7 +19,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <list>
+#include <array>
 #include <string>
 
 #include <tclap/CmdLine.h>
@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 
         // Execute       
         LogError logErr;
-        string result;
+        wstring result;
 
         // Compare two folders
         if (path_folders.size() == 2u) 
@@ -93,17 +93,18 @@ int main(int argc, char* argv[])
             result = cf::Json(cf::CompareFolders(cf::json_t{ path_json[0] }, cf::json_t{ path_json[1] }));
         }
 
-        // Output th eresult
+        // Output the result
         if (path_output.empty())  {
-            cout << result;
+            wcout << result;
         }
-        else {
+        else
+		{
             ofstream stream{ path_output , ios::out };
             if (!stream) {
                 throw runtime_error{ "Cannot write to " + path_output };
             }
-            stream << result;
-            stream.close();
+			
+			cf::WriteWString(stream, result);
         }
     }
     catch (TCLAP::ArgException &e)  // catch any exceptions

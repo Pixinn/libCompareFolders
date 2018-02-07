@@ -1,4 +1,4 @@
-/*
+﻿/*
 3  *  Copyright (C) 2017 Christophe Meneboeuf <christophe@xtof.info>
 4  *
 5  *  This program is free software: you can redistribute it and/or modify
@@ -70,8 +70,8 @@ list<fs::path> Get_Identical_Files()
 string Random_String(const unsigned length)
 {
     const auto len = (1 + length) & 0xFF;
-    constexpr auto size_charset = 62u;;
-    constexpr array<char, size_charset> charset = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', \
+    constexpr auto size_charset = 62u;
+    constexpr array<unsigned char, size_charset> charset = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', \
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',\
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
     unique_ptr<char[]> buffer{ new char[len + 1] };
@@ -83,12 +83,33 @@ string Random_String(const unsigned length)
     return str;
 }
 
+
+/// @brief Returns a random wide string
+wstring Random_WString(const unsigned length)
+{
+    const auto len = (1 + length) & 0xFF;
+    constexpr array<wchar_t, 100u> charset = { 	L'0',L'1',L'2',L'3',L'4',L'5',L'6',L'7',L'8',L'9',
+                                                L'a',L'z',L'e',L'r',L't',L'y',L'u',L'i',L'o',L'p',L'q',L's',L'd',L'f',L'g',L'h',L'j',L'k',L'l',L'm',L'w',L'x',L'c',L'v',L'b',L'n',
+                                                L'A',L'Z',L'E',L'R',L'T',L'Y',L'U',L'I',L'O',L'P',L'Q',L'S',L'D',L'F',L'G',L'H',L'J',L'K',L'L',L'M',L'W',L'X',L'C',L'V',L'B',L'N',                                                
+                                                L'α',L'β',L'γ',L'δ',L'ε',L'ख',L'ग',L'घ',L'ङ',L'च',L'僃',L'僄',L'僅',L'僆',L'僇',L'љ',L'њ',L'ћ',L'ќ',L'ѝ',L'س',L'ڇ',L'ڲ',L'غ',L'؁',
+                                                L'.',L'&',L'é',L'²',L'è',L'ç',L'à',L'@',L'$',L'£',L'€',L'☂',L'☣'};
+	const auto size_charset = charset.size();
+	unique_ptr<wchar_t[]> buffer{ new wchar_t[len + 1] };
+	for (auto i = 0u; i < len; ++i) {
+        buffer[i] = charset[rand() % size_charset];
+    }
+	buffer[len] = L'\0';
+	const wstring str{ buffer.get() };
+    return str;
+}
+
+
 /// @brief Creates a random named folder
 /// @param parent Where to create the folder.
 fs::path Create_Random_Folder(const fs::path parent)
 {
     constexpr uint8_t max_len_name = 20u;
-    const auto name = parent / Random_String(1 + (rand() % (max_len_name-1)));
+    const auto name = parent / Random_WString(1 + (rand() % (max_len_name-1)));
     if (!fs::exists(name) && !fs::create_directory(name)) {
         throw runtime_error{ "Cannot create folder " + name.string() };
     }
@@ -109,9 +130,9 @@ vector<fs::path> Create_Random_Files(const fs::path folder, const uint8_t max_nb
     const unsigned nb_files = max_nb_files == 1 ? 1 : 1 + (rand() % (max_nb_files-1));
     for (auto i = 0u; i < nb_files; ++i)
     {
-        auto filepath = folder / Random_String(rand() % max_len_filename);
+        auto filepath = folder / Random_WString(rand() % max_len_filename);
         while (fs::exists(filepath)) {
-            filepath = folder / Random_String(rand() % max_len_filename);
+            filepath = folder / Random_WString(rand() % max_len_filename);
         }
         fs::ofstream stream{ filepath, fs::ofstream::binary };
         constexpr auto max_size_file = 65535u;
@@ -308,9 +329,9 @@ vector<fs::path> Rename_Files(const fs::path& folder, list<fs::path>& files_iden
         files_identical.erase(it);
         const auto parent = path_file.parent_path();
         const auto filename_old = path_file.filename();
-        auto filename_new = Random_String(20u);
-        while (filename_new == filename_old.string()) {
-            filename_new = Random_String(20u);
+        auto filename_new = Random_WString(20u);
+        while (filename_new == filename_old.wstring()) {
+            filename_new = Random_WString(20u);
         }
         const auto path_new = parent / filename_new;
         fs::rename(path_file, path_new);
@@ -409,53 +430,57 @@ TEST_CASE("JSON")
     const fs::path path_json_left{ fs::temp_directory_path() / "compare_folder_left.json" };
     const fs::path path_json_right{ fs::temp_directory_path() / "compare_folder_right.json" };
     
-    // Save folder 1 as a JSON file    
-    fs::fstream stream_json_left{ path_json_left, ios::out };
-    if (!stream_json_left) {
-        throw(runtime_error{ "Cannot create " + path_json_left.string() + " required to complete the test." });
-    }
-    auto json_left = cf::ScanFolder(Folders.first.string());
-    stream_json_left << json_left;
-    stream_json_left.close();
-    // Save folder 2 as a JSON file    
-    fs::fstream stream_json_right{ path_json_right, ios::out };
-    if (!stream_json_right) {
-        throw(runtime_error{ "Cannot create " + path_json_right.string() + " required to complete the test." });
-    }
-    auto json_right = cf::ScanFolder(Folders.second.string());
-    stream_json_right << json_right;
-    stream_json_right.close();
+	{
+		// Save folder 1 as a JSON file    
+		std::ofstream stream_json_left{ path_json_left.string(), ios::out };
+		if (!stream_json_left) {
+			throw(runtime_error{ "Cannot create " + path_json_left.string() + " required to complete the test." });
+		}
+		auto json_left = cf::ScanFolder(Folders.first.string());
+		cf::WriteWString(stream_json_left, json_left);
+		stream_json_left.close();
+		// Save folder 2 as a JSON file    
+		std::ofstream stream_json_right{ path_json_right.string(), ios::out };
+		if (!stream_json_right) {
+			throw(runtime_error{ "Cannot create " + path_json_right.string() + " required to complete the test." });
+		}
+		auto json_right = cf::ScanFolder(Folders.second.string());
+		cf::WriteWString(stream_json_right, json_right);
+		stream_json_right.close();
 
-    // Use the JSON files to compare the folders
-    const auto diff = cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
+		// Use the JSON files to compare the folders
+		const auto diff = cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
 
     REQUIRE(diff == Diff);
+	}
 
-    // Corrupt the json file
-    // 1 - Remove the Generator field
-    pt::ptree root;
-    stream_json_left.open(path_json_left, ios::in);
-    pt::read_json(stream_json_left, root);
-    stream_json_left.close();
+	{
+		// Corrupt the json file
+		// 1 - Remove the Generator field
+		pt::ptree root;
+		std::fstream stream_json_left{ path_json_left.string(), ios::in };
+		pt::read_json(stream_json_left, root);
+		stream_json_left.close();
 
-    auto& generator = root.get_child("Generator");
-    generator.put_value("CORRUPTED");
-    stream_json_left.open(path_json_left, ios::out);
-    pt::write_json(stream_json_left, root);
-    stream_json_left.close();
-    bool exception = false;
-    try {
-        cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
-    }
-    catch (const cf::ExceptionFatal&) {
-        exception = true;
-    }
-    catch (...) {
-        cerr << "Unexpected Exception received in test \"JSON\"" << endl;
-        exception = false;
-    }
+		auto& generator = root.get_child("Generator");
+		generator.put_value("CORRUPTED");
+		stream_json_left.open(path_json_left.string(), ios::out);
+		pt::write_json(stream_json_left, root);
+		stream_json_left.close();
+		bool exception = false;
+		try {
+			cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
+		}
+		catch (const cf::ExceptionFatal&) {
+			exception = true;
+		}
+		catch (...) {
+			cerr << "Unexpected Exception received in test \"JSON\"" << endl;
+			exception = false;
+		}
 
-    REQUIRE(exception == true);
+		REQUIRE(exception == true);
+	}
 
 }
 
