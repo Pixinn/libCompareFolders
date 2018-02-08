@@ -62,12 +62,13 @@ namespace cf {
                 );
                 const auto path_relative = fs::relative(path, root);
                 const auto time_modified = fs::last_write_time(path);
+                const auto size = fs::file_size(path);
 
-                hashes.setHash(path_relative, { hash, time_modified } );
+                hashes.setHash(path_relative, { hash, time_modified, size } );
             }
         }
         catch (const CryptoPP::Exception& e) {
-            const string message = string{ "Hashing error: " } +e.what();
+            const string message = string{ "Hashing error: " } + e.what();
             logger.log(message);
         }
       
@@ -95,11 +96,19 @@ namespace cf {
         }
         CCollectionHash collection{ fs::path{ root.get<wstring>(JSON_KEYS.ROOT) }};
 
-        for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
-            const auto hash = file.second.get_child(JSON_KEYS.CONTENT.HASH).data();
-            const time_t time = std::stoll(file.second.get_child(JSON_KEYS.CONTENT.TIME).data());
-            collection.setHash(fs::path{ file.first }, {codec_utf8.to_bytes(hash) , time });
+        try {
+            for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
+                const auto hash = file.second.get_child(JSON_KEYS.CONTENT.HASH).data();
+                const time_t time = std::stoll(file.second.get_child(JSON_KEYS.CONTENT.TIME).data());
+                const auto size = std::stoull(file.second.get_child(JSON_KEYS.CONTENT.SIZE).data());
+                collection.setHash(fs::path{ file.first }, { codec_utf8.to_bytes(hash) , time });
+            }
         }
+        catch (const pt::ptree_error& e)
+        {
+            throw ExceptionFatal{ "An error occured while parsing " + json_path.string() + " : " + e.what() };
+        }
+
         return collection;
     }
     

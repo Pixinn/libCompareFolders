@@ -18,6 +18,7 @@
 #ifndef _SRC_CCollectionHash_hpp__
 #define _SRC_CCollectionHash_hpp__
 
+#include <cstdint>
 #include <map>
 #include <vector>
 #include <string>
@@ -45,6 +46,7 @@ namespace  cf {
             }
             std::string hash;           ///< Hash of the file's content
             std::time_t time_modified;  ///< Time of last  modification
+            std::uintmax_t size;
         };
 
         /// @brief Constructor from a given path

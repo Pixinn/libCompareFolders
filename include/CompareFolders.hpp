@@ -42,6 +42,7 @@ namespace cf
             const std::wstring FILES{ L"files" };                     ///< Files inside a folder
             const std::wstring HASH{ L"hash" };                       ///< Hash of a file's conte,t
             const std::wstring TIME{ L"last_modified" };              ///< Time of file's last modification
+            const std::wstring SIZE{ L"size" };                       ///< Size of the file
         } CONTENT;                                                    ///< Description of a filder's content
     } JSON_KEYS;
 

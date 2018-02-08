@@ -174,8 +174,9 @@ namespace  cf
         pt::wptree node_files;
         for (const auto& entry : _file_infos) {
             pt::wptree node_info;
-            node_info.put(JSON_KEYS.CONTENT.HASH, wstring{begin(entry.second.hash), end(entry.second.hash)}); // Workd because hash is plain 7-bit ASCII!
+            node_info.put(JSON_KEYS.CONTENT.HASH, wstring{begin(entry.second.hash), end(entry.second.hash)}); // Works because hash is plain 7-bit ASCII!
             node_info.put(JSON_KEYS.CONTENT.TIME, entry.second.time_modified);
+            node_info.put(JSON_KEYS.CONTENT.SIZE, entry.second.size);
             node_files.push_back(pt::wptree::value_type(entry.first.wstring(), node_info)); // not using "put()" as '.' is its delimiter
         }
         root.add_child(JSON_KEYS.CONTENT.FILES, node_files);
