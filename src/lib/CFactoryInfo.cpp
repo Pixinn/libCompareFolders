@@ -32,7 +32,7 @@
 
 #include "CompareFolders.hpp"
 
-#include "CFactoryHashes.hpp"
+#include "CFactoryInfo.hpp"
 
 
 
@@ -45,10 +45,10 @@ namespace cf {
     
     /// @detailed   Computing hashes can take some time. Thus, an external error logger must be provided
     ///             to give the opportunity to report the errors in real time.
-    CCollectionHash CFactoryHashes::computeHashes(const fs::path& root, ILogError& logger) const
+    CCollectionInfo CFactoryInfo::computeHashes(const fs::path& root, ILogError& logger) const
     {
         const auto paths = listFiles(root);
-        CCollectionHash hashes{ root };
+        CCollectionInfo hashes{ root };
 
         try 
         {
@@ -76,7 +76,7 @@ namespace cf {
     }
 
 
-    CCollectionHash CFactoryHashes::readHashes(const fs::path& json_path) const
+    CCollectionInfo CFactoryInfo::readHashes(const fs::path& json_path) const
     {
         // Prepare the wide string stream
         if(!fs::is_regular_file(json_path)) {
@@ -94,7 +94,7 @@ namespace cf {
         if (generator != JSON_CONST_VALUES.GENERATOR) {
             throw ExceptionFatal{ "This is not a proper file." };
         }
-        CCollectionHash collection{ fs::path{ root.get<wstring>(JSON_KEYS.ROOT) }};
+        CCollectionInfo collection{ fs::path{ root.get<wstring>(JSON_KEYS.ROOT) }};
 
         try {
             for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
@@ -115,7 +115,7 @@ namespace cf {
 
     ///////////////////////
 
-    const std::list<fs::path> CFactoryHashes::listFiles(const fs::path& dir) const
+    const std::list<fs::path> CFactoryInfo::listFiles(const fs::path& dir) const
     {
         // Collect the files list
         std::list<fs::path> paths;

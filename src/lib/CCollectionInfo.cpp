@@ -21,7 +21,7 @@
 #include <boost/property_tree/json_parser.hpp>
 
 #include "CompareFolders.hpp"
-#include "CCollectionHash.hpp"
+#include "CCollectionInfo.hpp"
 
 
 using namespace std;
@@ -34,7 +34,7 @@ namespace  cf
     
     ///////////////////////
 
-    void CCollectionHash::setHash(const fs::path& path, const info_t& info)
+    void CCollectionInfo::setHash(const fs::path& path, const info_t& info)
     {        
         // Is it the first time a hash is provided for this file?
         {
@@ -63,7 +63,7 @@ namespace  cf
     
     ///////////////////////
     
-    void CCollectionHash::removePath(const fs::path& path)
+    void CCollectionInfo::removePath(const fs::path& path)
     {
         const auto file_info = _file_infos.find(path);
         if(file_info == _file_infos.end()) { // not found
@@ -91,7 +91,7 @@ namespace  cf
     
     ///////////////////////
     
-    diff_t CCollectionHash::compare(CCollectionHash rhs) const
+    diff_t CCollectionInfo::compare(CCollectionInfo rhs) const
     {
 
         list<wstring> identical;
@@ -105,7 +105,7 @@ namespace  cf
             const auto& file_hash_right = rhs._file_infos.find(file_info.first);
             if (file_hash_right != rhs._file_infos.end()) // file with the same relative path
             {
-                if (file_hash_right->second == file_info.second) { // identical
+                if (file_hash_right->second.isIdentical(file_info.second)) { // identical
                     identical.push_back(file_info.first.wstring());
                 }
                 else { // different
@@ -166,7 +166,7 @@ namespace  cf
     }
 
 	/// @details The JSON file is coded in wstring to handle any special character in the filepaths
-	wstring CCollectionHash::json() const
+	wstring CCollectionInfo::json() const
     {
         pt::wptree root;
         root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);

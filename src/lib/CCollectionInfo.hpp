@@ -15,8 +15,8 @@
 16  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 17 */
 
-#ifndef _SRC_CCollectionHash_hpp__
-#define _SRC_CCollectionHash_hpp__
+#ifndef _SRC_CCollectionInfo_hpp__
+#define _SRC_CCollectionInfo_hpp__
 
 #include <cstdint>
 #include <map>
@@ -35,13 +35,13 @@ namespace  cf {
     /// @details Internally it is built on two symetrical maps that can give the hash of a file or
     /// the files producing a given hash (useful if some files are duplicated).
     /// All operations are **not** thread safe!
-    class CCollectionHash
+    class CCollectionInfo
     {
     public:
 
         /// @brief Informations about a file
         struct info_t {
-            bool operator==(const info_t& rhs) {
+            bool isIdentical(const info_t& rhs) {
                 return hash == rhs.hash;
             }
             std::string hash;           ///< Hash of the file's content
@@ -51,10 +51,10 @@ namespace  cf {
 
         /// @brief Constructor from a given path
         /// @param root Root folder containing the hashed files
-        CCollectionHash(const fs::path& root) noexcept :
+        CCollectionInfo(const fs::path& root) noexcept :
             _root{ root }
         {   }
-        ~CCollectionHash() = default;
+        ~CCollectionInfo() = default;
         
         /// @brief Adds a hash corresponding to a given path
         void setHash(const fs::path& path, const info_t& info);
@@ -69,7 +69,7 @@ namespace  cf {
         void removePath(const fs::path& path);
         
         /// @brief Compares the collection to another one.
-        diff_t compare(CCollectionHash rhs) const;
+        diff_t compare(CCollectionInfo rhs) const;
 
         /// @brief returns the number of paths
         inline unsigned size() {
@@ -86,4 +86,4 @@ namespace  cf {
 }
 
 
-#endif /* _SRC_CCollectionHash_hpp__ */
+#endif /* _SRC_CCollectionInfo_hpp__ */

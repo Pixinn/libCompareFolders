@@ -29,10 +29,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(SRC_DIR_LIB ${CMAKE_SOURCE_DIR}/src/lib)
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
 set(LIB_NAME "CompareFolders")
-add_library(${LIB_NAME} ${SRC_DIR_LIB}/CCollectionHash.hpp
-                        ${SRC_DIR_LIB}/CCollectionHash.cpp
-                        ${SRC_DIR_LIB}/CFactoryHashes.hpp
-                        ${SRC_DIR_LIB}/CFactoryHashes.cpp
+add_library(${LIB_NAME} ${SRC_DIR_LIB}/CCollectionInfo.hpp
+                        ${SRC_DIR_LIB}/CCollectionInfo.cpp
+                        ${SRC_DIR_LIB}/CFactoryInfo.hpp
+                        ${SRC_DIR_LIB}/CFactoryInfo.cpp
 						${SRC_DIR_LIB}/CompareFolders.cpp
                         ${SRC_DIR_LIB}/Utilities.cpp
                         ${INCLUDE_DIR}/CompareFolders.hpp)

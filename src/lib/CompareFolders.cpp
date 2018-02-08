@@ -17,8 +17,8 @@
 
 #include <boost/filesystem.hpp>
 
-#include "CCollectionHash.hpp"
-#include "CFactoryHashes.hpp"
+#include "CCollectionInfo.hpp"
+#include "CFactoryInfo.hpp"
 
 #include "CompareFolders.hpp"
 
@@ -126,7 +126,7 @@ diff_t cf::CompareFolders(const std::string& root_left, const std::string& root_
     const auto path_folder_2 = path_folder(root_right);
 
     // Compute the hashes
-    const cf::CFactoryHashes factoryHashes{};
+    const cf::CFactoryInfo factoryHashes{};
 
     const auto hashesDir1 = factoryHashes.computeHashes(path_folder_1, logger);
     const auto hashesDir2 = factoryHashes.computeHashes(path_folder_2, logger);
@@ -139,7 +139,7 @@ diff_t cf::CompareFolders(const std::string& root_left, const std::string& root_
 
 diff_t cf::CompareFolders(const json_t left, const json_t right)
 {
-    const cf::CFactoryHashes factoryHashes{};
+    const cf::CFactoryInfo factoryHashes{};
 
     const auto hashesDir1 = factoryHashes.readHashes(left.path);
     const auto hashesDir2 = factoryHashes.readHashes(right.path);
@@ -156,7 +156,7 @@ diff_t cf::CompareFolders(const std::string& folder, const json_t json, ILogErro
     const auto path_folder_1 = path_folder(folder);
 
     // Compute the hashes
-    const cf::CFactoryHashes factoryHashes{};
+    const cf::CFactoryInfo factoryHashes{};
 
     const auto hashesDir1 = factoryHashes.computeHashes(path_folder_1, logger);
     const auto hashesDir2 = factoryHashes.readHashes(json.path);
@@ -170,7 +170,7 @@ diff_t cf::CompareFolders(const std::string& folder, const json_t json, ILogErro
 wstring cf::ScanFolder(const string& path, ILogError& logger)
 {
     const auto folder = path_folder(path);
-    const cf::CFactoryHashes factoryHashes{};
+    const cf::CFactoryInfo factoryHashes{};
     const auto properties = factoryHashes.computeHashes(folder, logger);
     return properties.json();
 }

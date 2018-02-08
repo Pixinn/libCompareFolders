@@ -15,13 +15,13 @@
 16  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 17 */
 
-#ifndef _SRC_CFactoryHashes_hpp__
-#define _SRC_CFactoryHashes_hpp__
+#ifndef _SRC_CFactoryInfo_hpp__
+#define _SRC_CFactoryInfo_hpp__
 
 #include <memory>
 #include <boost/filesystem.hpp>
 
-#include "CCollectionHash.hpp"
+#include "CCollectionInfo.hpp"
 
 
 namespace fs = boost::filesystem;
@@ -31,20 +31,20 @@ namespace  cf {
     class ILogError;
     
     /// @brief Produces hashes
-    class CFactoryHashes
+    class CFactoryInfo
     {
     public:
-        CFactoryHashes() = default;
-        ~CFactoryHashes() = default;
+        CFactoryInfo() = default;
+        ~CFactoryInfo() = default;
     
         /// @brief Builds a collection with all the directory's files' hashes
         /// @param root Root folder: all its files will be hashed
         /// @param loggerErr Will log eventual errors
-        CCollectionHash computeHashes(const fs::path& root, ILogError& loggerErr) const;
+        CCollectionInfo computeHashes(const fs::path& root, ILogError& loggerErr) const;
 
         /// @brief Builds a collection from the values store in a JSON file
         /// @param json_path Pth to the JSON file storing the hashes
-        CCollectionHash readHashes(const fs::path& json_path) const;
+        CCollectionInfo readHashes(const fs::path& json_path) const;
     
     private:
         /// @brief Lists and returns all **files** entries located inside the provided directory
@@ -54,4 +54,4 @@ namespace  cf {
 }
 
 
-#endif /* _SRC_CFactoryHashes_hpp__ */
+#endif /* _SRC_CFactoryInfo_hpp__ */
