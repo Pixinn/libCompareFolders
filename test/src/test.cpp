@@ -436,7 +436,7 @@ TEST_CASE("JSON")
 		if (!stream_json_left) {
 			throw(runtime_error{ "Cannot create " + path_json_left.string() + " required to complete the test." });
 		}
-		auto json_left = cf::ScanFolder(Folders.first.string());
+		auto json_left = cf::ScanFolder(Folders.first.string(), cf::eCollectingAlgorithm::SECURE);
 		cf::WriteWString(stream_json_left, json_left);
 		stream_json_left.close();
 		// Save folder 2 as a JSON file    
@@ -444,7 +444,7 @@ TEST_CASE("JSON")
 		if (!stream_json_right) {
 			throw(runtime_error{ "Cannot create " + path_json_right.string() + " required to complete the test." });
 		}
-		auto json_right = cf::ScanFolder(Folders.second.string());
+		auto json_right = cf::ScanFolder(Folders.second.string(), cf::eCollectingAlgorithm::SECURE);
 		cf::WriteWString(stream_json_right, json_right);
 		stream_json_right.close();
 

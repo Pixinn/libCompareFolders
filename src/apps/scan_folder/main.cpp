@@ -47,21 +47,26 @@ int main(int argc, char* argv[])
 {
 
     // Parsing args
-    TCLAP::CmdLine cmd{ "Analyzes the content of a filder and export the result to a JSON file." };
+    TCLAP::CmdLine cmd{ "Scans the content of a folder and export the result to a JSON file." };
     TCLAP::ValueArg<string> folder("f", "folder", "The folder to be analyzed", true, "", "Folder's path");
     TCLAP::ValueArg<string> output("o", "output", "The JSON file that will contain the descrition of the scanned folder", true, "",  "JSON filepath");
+    TCLAP::SwitchArg secure("s", "secure", "Use a cryptographically secure (but slow) hash algorithm to compare the content of files");
     cmd.add(folder);
     cmd.add(output);
+    cmd.add(secure);
     cmd.parse(argc, argv);
     const auto path_folder = folder.getValue();
     const auto path_output = output.getValue();
+    const auto secure_hash = secure.getValue();
+    const auto algo = secure.getValue() ? cf::eCollectingAlgorithm::SECURE : cf::eCollectingAlgorithm::FAST;
+    
 
     cout << "\nSCANNING \"" << path_folder << '\"' << endl;
     
     try {
         
         LogError logErr;
-        const auto json = cf::ScanFolder(path_folder, logErr);
+        const auto json = cf::ScanFolder(path_folder, algo, logErr);
         ofstream stream{ path_output , ios::out };
         if (!stream) {
             throw runtime_error{ "Cannot write to " + path_output };

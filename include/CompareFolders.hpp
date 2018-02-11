@@ -119,6 +119,14 @@ namespace cf
     } diff_t;
 
 
+    /// @brief Algorithm used to compute file's hashes
+    /// @detailled Hashes are used to find which files are different, or were renamed / moved.
+    typedef enum eHashingAlgorithm {
+        FAST,       ///< **Faster** algorithm. Reliable and sufficient in *most* situation.
+        SECURE      ///< **100% reliable**. Using a *slow* but secure cryptographic hashing function.
+    } eCollectingAlgorithm;
+
+
     /// @brief Compares the content of two folders
     /// @param left First folder's path
     /// @param right Second folder's path
@@ -149,8 +157,10 @@ namespace cf
     std::wstring Json(const diff_t diff);
 
     /// @brief Analyzes the content of a folder and returns a JSON string
-    /// @param path Path of the folder to be analyzed
-    std::wstring ScanFolder(const std::string& path, ILogError& logErrors = SLogErrorNull::GetInstance());
+    /// @param path          Path of the folder to be analyzed
+    /// @param method        Algorithm used to collect info about the files
+    /// @param logErrors     Error logger
+    std::wstring ScanFolder(const std::string& path, const eHashingAlgorithm algo,  ILogError& logErrors = SLogErrorNull::GetInstance());
 	
 	/// @brief 	Creates a new file containing an UTF-8 representation of the provided wstring
 	/// @details The resulting file will be UTF-8 which *may* be headed by a **BOM**

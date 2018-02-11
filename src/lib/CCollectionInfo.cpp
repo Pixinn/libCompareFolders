@@ -34,7 +34,7 @@ namespace  cf
     
     ///////////////////////
 
-    void CCollectionInfo::setHash(const fs::path& path, const info_t& info)
+    void CCollectionInfo::setInfo(const fs::path& path, const info_t& info)
     {        
         // Is it the first time a hash is provided for this file?
         {

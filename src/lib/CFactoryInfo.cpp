@@ -31,6 +31,7 @@
 #include <cryptopp/files.h>
 
 #include "CompareFolders.hpp"
+#include "CCollectionInfo.hpp"
 
 #include "CFactoryInfo.hpp"
 
@@ -40,15 +41,79 @@ using namespace std;
 namespace pt = boost::property_tree;
 
 namespace cf {
+
+    ///////////////////////
+
+    const std::list<fs::path> AFactoryInfo::listFiles(const fs::path& dir) const
+    {
+        // Collect the files list
+        std::list<fs::path> paths;
+        try
+        {
+            for (const auto& entry : fs::recursive_directory_iterator(dir)) {
+                if (fs::is_regular_file(entry.path())) {
+                    paths.push_back(entry.path());
+                }
+            }
+        }
+        catch (const fs::filesystem_error& e) {
+            throw(ExceptionFatal{ e.what() });
+        }
+        return paths;
+    }
+
+
+
     
+    ///////////////////////
+
+    CCollectionInfo AFactoryInfo::readHashes(const fs::path& json_path) const
+    {
+        // Prepare the wide string stream
+        if (!fs::is_regular_file(json_path)) {
+            throw ExceptionFatal{ json_path.string() + " is not a file." };
+        }
+        wifstream streamFile{ json_path.string(), ios_base::in };
+        streamFile.imbue(locale(locale::empty(), new codecvt_utf8<wchar_t>));
+        wstringstream streamStr;
+        streamStr << streamFile.rdbuf();
+        // Populates the PTree from the stream
+        wstring_convert<codecvt_utf8_utf16<wchar_t>> codec_utf8;
+        pt::wptree root;
+        pt::read_json(streamStr, root);
+        const auto generator = root.get<wstring>(JSON_KEYS.GENERATOR);
+        if (generator != JSON_CONST_VALUES.GENERATOR) {
+            throw ExceptionFatal{ "This is not a proper file." };
+        }
+        CCollectionInfo collection{ fs::path{ root.get<wstring>(JSON_KEYS.ROOT) } };
+
+        try {
+            for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
+                const auto hash = file.second.get_child(JSON_KEYS.CONTENT.HASH).data();
+                const time_t time = std::stoll(file.second.get_child(JSON_KEYS.CONTENT.TIME).data());
+                const auto size = std::stoull(file.second.get_child(JSON_KEYS.CONTENT.SIZE).data());
+                collection.setInfo(fs::path{ file.first }, { codec_utf8.to_bytes(hash) , time });
+            }
+        }
+        catch (const pt::ptree_error& e)
+        {
+            throw ExceptionFatal{ "An error occured while parsing " + json_path.string() + " : " + e.what() };
+        }
+
+        return collection;
+    }
+
+
+
     ////////////////////////
     
-    /// @detailed   Computing hashes can take some time. Thus, an external error logger must be provided
+    /// @detailed   All hashes are computed using a cryptographic hasher. 
+    ///             Collecting info can take some time. Thus, an external error logger must be provided
     ///             to give the opportunity to report the errors in real time.
-    CCollectionInfo CFactoryInfo::computeHashes(const fs::path& root, ILogError& logger) const
+    CCollectionInfo CFactoryInfoSecure::computeHashes(const fs::path& root, ILogError& logger) const
     {
         const auto paths = listFiles(root);
-        CCollectionInfo hashes{ root };
+        CCollectionInfo info{ root };
 
         try 
         {
@@ -64,73 +129,65 @@ namespace cf {
                 const auto time_modified = fs::last_write_time(path);
                 const auto size = fs::file_size(path);
 
-                hashes.setHash(path_relative, { hash, time_modified, size } );
+                info.setInfo(path_relative, { hash, time_modified, size } );
             }
         }
         catch (const CryptoPP::Exception& e) {
             const string message = string{ "Hashing error: " } + e.what();
             logger.log(message);
-        }
-      
-        return hashes;
-    }
-
-
-    CCollectionInfo CFactoryInfo::readHashes(const fs::path& json_path) const
-    {
-        // Prepare the wide string stream
-        if(!fs::is_regular_file(json_path)) {
-            throw ExceptionFatal{json_path.string() + " is not a file."};
-        }
-        wifstream streamFile{json_path.string(), ios_base::in};
-        streamFile.imbue(locale(locale::empty(), new codecvt_utf8<wchar_t>));
-        wstringstream streamStr;
-        streamStr << streamFile.rdbuf();
-        // Populates the PTree from the stream
-        wstring_convert<codecvt_utf8_utf16<wchar_t>> codec_utf8;
-        pt::wptree root;
-        pt::read_json(streamStr, root);
-        const auto generator= root.get<wstring>(JSON_KEYS.GENERATOR);
-        if (generator != JSON_CONST_VALUES.GENERATOR) {
-            throw ExceptionFatal{ "This is not a proper file." };
-        }
-        CCollectionInfo collection{ fs::path{ root.get<wstring>(JSON_KEYS.ROOT) }};
-
-        try {
-            for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
-                const auto hash = file.second.get_child(JSON_KEYS.CONTENT.HASH).data();
-                const time_t time = std::stoll(file.second.get_child(JSON_KEYS.CONTENT.TIME).data());
-                const auto size = std::stoull(file.second.get_child(JSON_KEYS.CONTENT.SIZE).data());
-                collection.setHash(fs::path{ file.first }, { codec_utf8.to_bytes(hash) , time });
-            }
-        }
-        catch (const pt::ptree_error& e)
-        {
-            throw ExceptionFatal{ "An error occured while parsing " + json_path.string() + " : " + e.what() };
-        }
-
-        return collection;
-    }
-    
-
-    ///////////////////////
-
-    const std::list<fs::path> CFactoryInfo::listFiles(const fs::path& dir) const
-    {
-        // Collect the files list
-        std::list<fs::path> paths;
-        try
-        {
-            for (const auto& entry : fs::recursive_directory_iterator(dir)) {
-                if(fs::is_regular_file(entry.path())) {
-                    paths.push_back(entry.path());
-                }
-            }
+            throw;  // TODO handle and don't rethrow
         }
         catch (const fs::filesystem_error& e) {
-            throw(ExceptionFatal{ e.what() });
+            const string message = string{ "Filesystem error: " } + e.what();
+            logger.log(message);
+            throw; // TODO handle and don't rethrow
         }
-        return paths;
+      
+        return info;
+    }
+
+    
+    /// @detailed   All *pseudo-hashes* are computed by combining the size of the file and its last modification time. 
+    ///             In a second pass, a real cryptographic hash is computed on *duplicates* that ùay arise because of the **weak** *pseudo-hashes* computed first.
+    ///             Collecting info can take some time. Thus, an external error logger must be provided
+    ///             to give the opportunity to report the errors in real time.
+    CCollectionInfo CFactoryInfoFast::computeHashes(const fs::path& root, ILogError& logger) const
+    {
+
+        // TODO WRITE THE REAL CODE
+
+        const auto paths = listFiles(root);
+        CCollectionInfo info{ root };
+
+        try
+        {
+            for (const auto& path : paths)
+            {
+                constexpr bool isUpperCase = true;
+                string hash;
+                CryptoPP::SHA1 hasher;
+                CryptoPP::FileSource(path.c_str(), true, \
+                    new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
+                );
+                const auto path_relative = fs::relative(path, root);
+                const auto time_modified = fs::last_write_time(path);
+                const auto size = fs::file_size(path);
+
+                info.setInfo(path_relative, { hash, time_modified, size });
+            }
+        }
+        catch (const CryptoPP::Exception& e) {
+            const string message = string{ "Hashing error: " } +e.what();
+            logger.log(message);
+            throw;  // TODO handle and don't rethrow
+        }
+        catch (const fs::filesystem_error& e) {
+            const string message = string{ "Filesystem error: " } +e.what();
+            logger.log(message);
+            throw; // TODO handle and don't rethrow
+        }
+
+        return info;
     }
     
     

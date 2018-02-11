@@ -57,12 +57,10 @@ namespace  cf {
         ~CCollectionInfo() = default;
         
         /// @brief Adds a hash corresponding to a given path
-        void setHash(const fs::path& path, const info_t& info);
+        void setInfo(const fs::path& path, const info_t& info);
 
-        /// @brief Exports the hashes as a JSON string
-        //std::string json() const;
-		
-		/// @brief Exports the hashes as a JSON string
+ 		
+		/// @brief Exports the info as a JSON string
         std::wstring json() const;
         
         /// @brief Removes the path from the collection

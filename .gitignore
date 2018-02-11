@@ -8,3 +8,6 @@ lib/
 .vs/
 .vscode/
 .DS_Store
+
+!src/lib
+

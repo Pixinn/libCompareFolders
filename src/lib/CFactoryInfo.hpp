@@ -21,34 +21,64 @@
 #include <memory>
 #include <boost/filesystem.hpp>
 
-#include "CCollectionInfo.hpp"
-
 
 namespace fs = boost::filesystem;
 
 namespace  cf {
 
+    class CCollectionInfo;
     class ILogError;
     
-    /// @brief Produces hashes
-    class CFactoryInfo
+    /// @brief Abstract class, root of the FactoryInfo class hierarchy
+    class AFactoryInfo
     {
     public:
-        CFactoryInfo() = default;
-        ~CFactoryInfo() = default;
-    
-        /// @brief Builds a collection with all the directory's files' hashes
-        /// @param root Root folder: all its files will be hashed
-        /// @param loggerErr Will log eventual errors
-        CCollectionInfo computeHashes(const fs::path& root, ILogError& loggerErr) const;
+        virtual ~AFactoryInfo() = default;
 
         /// @brief Builds a collection from the values store in a JSON file
         /// @param json_path Pth to the JSON file storing the hashes
         CCollectionInfo readHashes(const fs::path& json_path) const;
+
+        /// @brief Builds a collection with all the directory's files' hashes
+        /// @param root Root folder: all its files will be hashed
+        /// @param loggerErr Will log eventual errors
+        virtual CCollectionInfo computeHashes(const fs::path& root, ILogError& loggerErr) const = 0;
     
-    private:
+    protected:
+        AFactoryInfo() = default;
+
         /// @brief Lists and returns all **files** entries located inside the provided directory
         const std::list<fs::path> listFiles(const fs::path&) const;
+    };
+
+    
+    /// @brief      *Seculrely* collects info about files.
+    /// @detailed   All hashes are produced by a real hashing function.
+    class CFactoryInfoSecure : public AFactoryInfo
+    {
+    public:
+        CFactoryInfoSecure() = default;
+        ~CFactoryInfoSecure() = default;
+    
+        /// @brief Builds a collection with all the directory's files' hashes
+        /// @param root Root folder: all its files will be hashed
+        /// @param loggerErr Will log eventual errors
+        CCollectionInfo computeHashes(const fs::path& root, ILogError& loggerErr) const override;
+    };
+
+    /// @brief      *Quickly* collects info about files.
+    /// @detailed   Hashes are computed using **modification time** and **size**. 
+    ///             If *duplicates* are found, **a real secure hash is computed** to confirm.
+    class CFactoryInfoFast : public AFactoryInfo
+    {
+    public:
+        CFactoryInfoFast() = default;
+        ~CFactoryInfoFast() = default;
+
+        /// @brief Builds a collection with all the directory's files' hashes
+        /// @param root Root folder: all its files will be hashed
+        /// @param loggerErr Will log eventual errors
+        CCollectionInfo computeHashes(const fs::path& root, ILogError& loggerErr) const override;
     };
     
 }
