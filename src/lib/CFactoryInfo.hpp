@@ -79,6 +79,10 @@ namespace  cf {
         /// @param root Root folder: all its files will be hashed
         /// @param loggerErr Will log eventual errors
         CCollectionInfo computeHashes(const fs::path& root, ILogError& loggerErr) const override;
+
+    private:
+        /// @brief Computes and returns the "*fast hash*" from the info provided
+        std::string hasherFast(const std::time_t time_modified, const std::uintmax_t size) const;
     };
     
 }

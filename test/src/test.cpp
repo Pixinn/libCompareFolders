@@ -20,6 +20,8 @@
 #include <stdexcept>
 #include <list>
 #include <array>
+#include <vector>
+#include <string>
 
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -44,8 +46,11 @@ constexpr unsigned MAX_NB_FILES_TO_MODIFY = 10u;
 constexpr unsigned MAX_NB_FILES_TO_ADD = 10u;
 constexpr unsigned MAX_NB_FILES_TO_RENAME = 10u;
 
+static const string FOLDER_ROOT{ "compare_folders" };
+
 
 static pair<fs::path, fs::path> Folders;
+static pair<fs::path, fs::path> FoldersFast;
 static cf::diff_t Diff;
 
 
@@ -221,20 +226,20 @@ bool Copy_Folder(fs::path const & source, fs::path const & destination )
 }
 
 
-/// @brief Builds a file tree to perform the tests on
-///        Returns the files that were created
+/// @brief      Builds a file tree to perform the tests on.
+/// @details    It will be directly used by tests of the *secure* hash. 
+///             Tests of the *fast* hash will use some of those files.
+///             Returns the files that were created
 pair<fs::path, fs::path> Build_Test_Files()
 {
     list<fs::path> files;
 
     const auto folder_tmp = fs::temp_directory_path();
-    const auto folder_left = folder_tmp / "left";
-    const auto folder_right = folder_tmp / "right";
-    if (!fs::exists(folder_left) && !fs::create_directory(folder_left)) {
+    const auto folder_left = folder_tmp / FOLDER_ROOT / "secure" / "left";
+    const auto folder_right = folder_tmp / FOLDER_ROOT / "secure" / "right";
+    if (!fs::exists(folder_left) && !fs::create_directories(folder_left)) {
         throw runtime_error{ "Cannot create folder " + folder_left.string() };
-    }
-
-    srand(static_cast<unsigned>(time(nullptr)));
+    }    
 
     const unsigned nb_folders = (rand() % (MAX_NB_FOLDERS -1))+1;
     for (auto i = 0u; i < nb_folders; ++i) {
@@ -247,6 +252,68 @@ pair<fs::path, fs::path> Build_Test_Files()
 
     return { folder_left, folder_right };
     
+}
+
+
+/// @brief      Builds a file tree to perform the tests of the *fast* hash  on.
+/// @details    Returns the files that were created
+/// @param      nb_files Number of *base* files to run the test on
+/// @param      dir_source Files to use as a source for the *test files*
+pair<fs::path, fs::path> Build_Test_Fast_Files(const unsigned nb_files, const fs::path& dir_source)
+{
+    // create test dirs
+    const auto folder_tmp = fs::temp_directory_path();
+    const auto folder_left = folder_tmp / FOLDER_ROOT / "fast" / "left";
+    const auto folder_right = folder_tmp / FOLDER_ROOT / "fast" / "right";
+    if (!fs::exists(folder_left) && !fs::create_directories(folder_left)) {
+        throw runtime_error{ "Cannot create folder " + folder_left.string() };
+    }
+
+
+    // list all source files
+    vector<fs::path> files;
+    fs::recursive_directory_iterator file{ dir_source };
+    while (file != fs::recursive_directory_iterator{}) {
+        if (!fs::is_directory(*file)) {
+            files.push_back(*file);
+        }
+        ++file;
+    }
+    if (files.size() < nb_files) {
+        throw std::runtime_error{ "Bad luck error width randomness: Not enough files were generated. Try again." };
+    }
+    // copy random files in test dir
+    class CInfo {
+    public:
+        CInfo(const time_t mod, const uintmax_t sz) :
+            last_modification{ mod }, size{ sz }
+        {   }
+        inline bool operator==(const CInfo& rhs) {
+            return rhs.last_modification == last_modification && rhs.size == size;
+        }
+        time_t last_modification;
+        uintmax_t size;
+    };
+    list<fs::path> files_ok;
+    vector<CInfo> infos;
+    for (auto i = 0u; i < nb_files; ++i)
+    {
+        const auto idx = rand() % files.size();
+        const auto path = files[idx];
+        const CInfo info{ fs::last_write_time(path), fs::file_size(path) };
+        if (find(begin(infos), end(infos), info) == end(infos)) { // suitable file : no other with the exact same size and date
+            infos.push_back(info);
+            fs::copy_file(
+                path,
+                folder_left / path.filename()
+            );
+        }
+    }
+
+    Copy_Folder(folder_left, folder_right);
+
+    return { folder_left, folder_right };
+
 }
 
 
@@ -359,7 +426,7 @@ TEST_CASE("BAD FOLDER TO COMPARE")
     bool bad_right_foldder = false;
 
     try {
-        cf::CompareFolders(".", folder_random);
+        cf::CompareFolders(".", folder_random, cf::eCollectingAlgorithm::SECURE);
     }
     catch (const cf::ExceptionFatal&) {
         bad_right_foldder = true;
@@ -367,7 +434,7 @@ TEST_CASE("BAD FOLDER TO COMPARE")
     REQUIRE(bad_right_foldder == true);
 
     try {
-        cf::CompareFolders(folder_random, ".");
+        cf::CompareFolders(folder_random, ".", cf::eCollectingAlgorithm::SECURE);
     }
     catch (const cf::ExceptionFatal&) {
         bad_left_folder = true;
@@ -397,7 +464,7 @@ TEST_CASE("NOMINAL")
     auto files_renamed = Rename_Files(Folders.first, files_identical);
 
     // Compare
-    Diff = cf::CompareFolders(Folders.first.string(), Folders.second.string());
+    Diff = cf::CompareFolders(Folders.first.string(), Folders.second.string(), cf::eCollectingAlgorithm::SECURE);
 
     // Check results
     REQUIRE(Diff.identical.size() == files_identical.size());
@@ -491,13 +558,17 @@ TEST_CASE("JSON")
 
 int main(int argc, char* argv[]) {
     
+    srand(static_cast<unsigned>(time(nullptr)));
+
     // global setup...
     Folders = Build_Test_Files();
+    FoldersFast = Build_Test_Fast_Files(20, Folders.first);
 
     int result = Catch::Session().run(argc, argv);
 
     // global clean-up...
     CleanUp(Folders);
+    CleanUp(FoldersFast);
 
     return result;
 }

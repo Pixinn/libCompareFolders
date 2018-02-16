@@ -86,7 +86,7 @@ namespace cf
     /// @brief JSON file
 	/// @details This is a mere facade to the path
     typedef struct json_t {
-        json_t(const std::string& p_path) :
+        explicit json_t(const std::string& p_path) :
             path{ p_path }
         {     }        
         const std::string path;
@@ -133,7 +133,7 @@ namespace cf
     /// @param logErrors A logger to catch minor errors that could happen. By default, the NULL logger will ignore them.
     /// @details Returns the differences between the two folders.
     ///          Identical files but with a different names are also detected.
-    diff_t CompareFolders(const std::string& left, const std::string& right, ILogError& logErrors = SLogErrorNull::GetInstance());
+    diff_t CompareFolders(const std::string& left, const std::string& right, const eHashingAlgorithm algo, ILogError& logErrors = SLogErrorNull::GetInstance());
 
     /// @brief Compares the content of two JSON files
     /// @param left First JSON file

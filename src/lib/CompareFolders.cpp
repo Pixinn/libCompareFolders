@@ -122,16 +122,18 @@ inline const fs::path path_folder(const string str_path)
 // ===== PUBLIC FUNCTIONS
 
 
-diff_t cf::CompareFolders(const std::string& root_left, const std::string& root_right, ILogError& logger)
+diff_t cf::CompareFolders(const std::string& root_left, const std::string& root_right, const eHashingAlgorithm algo, ILogError& logger)
 {
     const auto path_folder_1 = path_folder(root_left);
     const auto path_folder_2 = path_folder(root_right);
 
     // Compute the hashes
-    const cf::CFactoryInfoSecure factoryHashes{};
+    unique_ptr<AFactoryInfo> factoryInfo = (algo == eCollectingAlgorithm::SECURE) ?
+        unique_ptr<AFactoryInfo>(dynamic_cast<AFactoryInfo*>(new CFactoryInfoSecure)) :
+        unique_ptr<AFactoryInfo>(dynamic_cast<AFactoryInfo*>(new CFactoryInfoFast));
 
-    const auto hashesDir1 = factoryHashes.computeHashes(path_folder_1, logger);
-    const auto hashesDir2 = factoryHashes.computeHashes(path_folder_2, logger);
+    const auto hashesDir1 = factoryInfo->computeHashes(path_folder_1, logger);
+    const auto hashesDir2 = factoryInfo->computeHashes(path_folder_2, logger);
         
     const auto diff = hashesDir1.compare(hashesDir2);
 
@@ -169,12 +171,12 @@ diff_t cf::CompareFolders(const std::string& folder, const json_t json, ILogErro
 }
 
 
-wstring cf::ScanFolder(const string& path, cf::eCollectingAlgorithm algo, ILogError& logger)
+wstring cf::ScanFolder(const string& path, const cf::eCollectingAlgorithm algo, ILogError& logger)
 {
     const auto folder = path_folder(path);
-    const auto factoryHashes = (algo == eCollectingAlgorithm::SECURE) ?
-        dynamic_cast<AFactoryInfo*>(make_unique<CFactoryInfoSecure>().get()) :
-        dynamic_cast<AFactoryInfo*>(make_unique<CFactoryInfoFast>().get());
-    const auto properties = factoryHashes->computeHashes(folder, logger);
+    unique_ptr<AFactoryInfo> factoryInfo = (algo == eCollectingAlgorithm::SECURE) ?
+        unique_ptr<AFactoryInfo>(dynamic_cast<AFactoryInfo*>(new CFactoryInfoSecure)) :
+        unique_ptr<AFactoryInfo>(dynamic_cast<AFactoryInfo*>(new CFactoryInfoFast));
+    const auto properties = factoryInfo->computeHashes(folder, logger);
     return properties.json();
 }
