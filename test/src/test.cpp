@@ -42,7 +42,7 @@ using namespace std;
 
 constexpr unsigned MAX_NB_FOLDERS = 10u;
 constexpr unsigned MAX_NB_FILES_PER_FOLDER = 100u;
-constexpr unsigned MAX_NB_FILES_TO_MODIFY = 10u;
+constexpr unsigned MAX_NB_FILES_TO_MODIFY = 7u;
 constexpr unsigned MAX_NB_FILES_TO_ADD = 10u;
 constexpr unsigned MAX_NB_FILES_TO_RENAME = 10u;
 
@@ -55,15 +55,15 @@ static cf::diff_t Diff;
 
 
 /// @rbrief returns the identical files
-list<fs::path> Get_Identical_Files()
+list<fs::path> Get_Identical_Files(const fs::path& dir)
 {
     list<fs::path> identical;
     
-    fs::recursive_directory_iterator it{ Folders.first };
+    fs::recursive_directory_iterator it{ dir };
     fs::recursive_directory_iterator it_end;
     while (it != it_end) { 
         if (fs::is_regular_file(*it)) {
-            identical.push_back(fs::relative(*it, Folders.first));
+            identical.push_back(fs::relative(*it, dir));
         }
         ++it;
     }
@@ -93,11 +93,11 @@ string Random_String(const unsigned length)
 wstring Random_WString(const unsigned length)
 {
     const auto len = (1 + length) & 0xFF;
-    constexpr array<wchar_t, 100u> charset = { 	L'0',L'1',L'2',L'3',L'4',L'5',L'6',L'7',L'8',L'9',
+    constexpr array<wchar_t, 99u> charset = { 	L'0',L'1',L'2',L'3',L'4',L'5',L'6',L'7',L'8',L'9',
                                                 L'a',L'z',L'e',L'r',L't',L'y',L'u',L'i',L'o',L'p',L'q',L's',L'd',L'f',L'g',L'h',L'j',L'k',L'l',L'm',L'w',L'x',L'c',L'v',L'b',L'n',
                                                 L'A',L'Z',L'E',L'R',L'T',L'Y',L'U',L'I',L'O',L'P',L'Q',L'S',L'D',L'F',L'G',L'H',L'J',L'K',L'L',L'M',L'W',L'X',L'C',L'V',L'B',L'N',                                                
                                                 L'α',L'β',L'γ',L'δ',L'ε',L'ख',L'ग',L'घ',L'ङ',L'च',L'僃',L'僄',L'僅',L'僆',L'僇',L'љ',L'њ',L'ћ',L'ќ',L'ѝ',L'س',L'ڇ',L'ڲ',L'غ',L'؁',
-                                                L'.',L'&',L'é',L'²',L'è',L'ç',L'à',L'@',L'$',L'£',L'€',L'☂',L'☣'};
+                                                L'&',L'é',L'²',L'è',L'ç',L'à',L'@',L'$',L'£',L'€',L'☂',L'☣'};
 	const auto size_charset = charset.size();
 	unique_ptr<wchar_t[]> buffer{ new wchar_t[len + 1] };
 	for (auto i = 0u; i < len; ++i) {
@@ -371,10 +371,22 @@ vector<fs::path> Add_Files(const fs::path& folder)
     }
     // add files
     const uint8_t nb_files = 1 + (rand() % (MAX_NB_FILES_TO_ADD - 1));
-    for (auto i = 0u; i < nb_files; ++i) {
-        auto idx = rand() % subfolders.size();
-        auto files = Create_Random_Files(subfolders[idx], 1);
-        files_added.insert(end(files_added), begin(files), end(files));
+    for (auto i = 0u; i < nb_files; ++i)
+    {
+        if (!subfolders.empty()) {
+            auto idx = rand() % subfolders.size();
+            auto subfolder = subfolders[idx];
+            auto files = Create_Random_Files(subfolder, 1);
+            files_added.insert(end(files_added), begin(files), end(files));
+        }
+        else {
+            auto files = Create_Random_Files(folder, 1);
+            for (auto& file : files) {
+                file = fs::relative(file, file.parent_path());
+            }
+            files_added.insert(end(files_added), begin(files), end(files));
+        }
+
     }
 
     return files_added;
@@ -444,10 +456,10 @@ TEST_CASE("BAD FOLDER TO COMPARE")
 
 
 
-TEST_CASE("NOMINAL")
+TEST_CASE("NOMINAL SECURE")
 {
     // Get the identical files list
-    auto files_identical = Get_Identical_Files();
+    auto files_identical = Get_Identical_Files(Folders.first);
 
     // Modify some
     auto files_modified = Modify_Files(Folders.first, files_identical);
@@ -466,6 +478,7 @@ TEST_CASE("NOMINAL")
     // Compare
     Diff = cf::CompareFolders(Folders.first.string(), Folders.second.string(), cf::eCollectingAlgorithm::SECURE);
 
+
     // Check results
     REQUIRE(Diff.identical.size() == files_identical.size());
     for (auto& entry : Diff.identical) {
@@ -477,14 +490,23 @@ TEST_CASE("NOMINAL")
     }
     REQUIRE(Diff.unique_left.size() == files_unique_left.size());
     for (auto& entry : Diff.unique_left) {
+        if (find(begin(files_unique_left), end(files_unique_left), entry) == end(files_unique_left)) {
+            wcout << "NOT FOUND: " << entry;
+        }
         REQUIRE(find(begin(files_unique_left), end(files_unique_left), entry) != end(files_unique_left));
     }
     REQUIRE(Diff.unique_right.size() == files_unique_right.size());
     for (auto& entry : Diff.unique_right) {
+        if (find(begin(files_unique_right), end(files_unique_right), entry) == end(files_unique_right)) {
+            wcout << "NOT FOUND: " << entry;
+        }
         REQUIRE(find(begin(files_unique_right), end(files_unique_right), entry) != end(files_unique_right));
     }
     REQUIRE(Diff.renamed.size() == files_renamed.size());
     for (auto& entry : Diff.renamed) {
+        if (find(begin(files_renamed), end(files_renamed), *begin(entry.left)) == end(files_renamed)) {
+            wcout << "NOT FOUND: " << *begin(entry.left);
+        }
         REQUIRE(find(begin(files_renamed), end(files_renamed), *begin(entry.left)) != end(files_renamed)); // Works because file were renamed in LEFT and there was no duplication
     }
    
@@ -492,7 +514,52 @@ TEST_CASE("NOMINAL")
 
 
 
-TEST_CASE("JSON")
+
+
+TEST_CASE("NOMINAL FAST")
+{
+    // Get the identical files list
+    auto files_identical = Get_Identical_Files(FoldersFast.first);
+
+    // Modify some
+    Sleep(1000);
+    auto files_modified = Modify_Files(FoldersFast.first, files_identical);
+    Sleep(1000);
+    auto files_modified_right = Modify_Files(FoldersFast.second, files_identical);
+    files_modified.insert(end(files_modified), begin(files_modified_right), end(files_modified_right));
+
+    // Add unique files
+    Sleep(1000);
+    auto files_unique_left = Add_Files(FoldersFast.first);
+    Sleep(1000);
+    auto files_unique_right = Add_Files(FoldersFast.second);
+
+    // Compare
+    auto diff = cf::CompareFolders(FoldersFast.first.string(), FoldersFast.second.string(), cf::eCollectingAlgorithm::FAST);
+
+    // Check results
+    REQUIRE(diff.identical.size() == files_identical.size());
+    for (auto& entry : diff.identical) {
+        REQUIRE(find(begin(files_identical), end(files_identical), entry) != end(files_identical));
+    }
+    REQUIRE(diff.different.size() == files_modified.size());
+    for (auto& entry : diff.different) {
+        REQUIRE(find(begin(files_modified), end(files_modified), entry) != end(files_modified));
+    }
+    REQUIRE(diff.unique_left.size() == files_unique_left.size());
+    for (auto& entry : diff.unique_left) {
+        REQUIRE(find(begin(files_unique_left), end(files_unique_left), entry) != end(files_unique_left));
+    }
+    REQUIRE(diff.unique_right.size() == files_unique_right.size());
+    for (auto& entry : diff.unique_right) {
+        REQUIRE(find(begin(files_unique_right), end(files_unique_right), entry) != end(files_unique_right));
+    }
+}
+
+
+
+
+TEST_CASE("NOMINAL JSON")
 {
     const fs::path path_json_left{ fs::temp_directory_path() / "compare_folder_left.json" };
     const fs::path path_json_right{ fs::temp_directory_path() / "compare_folder_right.json" };
@@ -556,15 +623,25 @@ TEST_CASE("JSON")
 
 
 
-int main(int argc, char* argv[]) {
-    
+int main(int argc, char* argv[])
+{
+   
     srand(static_cast<unsigned>(time(nullptr)));
 
-    // global setup...
-    Folders = Build_Test_Files();
-    FoldersFast = Build_Test_Fast_Files(20, Folders.first);
+    try {
+        // global setup...
+        Folders = Build_Test_Files();
+        FoldersFast = Build_Test_Fast_Files(20, Folders.first);
+    }
+    catch (const exception& e) {
+        cout << e.what() << endl;
+        // global clean-up...
+        CleanUp(Folders);
+        CleanUp(FoldersFast);
+        return -1;
+    }
 
-    int result = Catch::Session().run(argc, argv);
+    auto result = Catch::Session().run(argc, argv);
 
     // global clean-up...
     CleanUp(Folders);
