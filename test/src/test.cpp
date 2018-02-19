@@ -166,30 +166,26 @@ bool Copy_Folder(fs::path const & source, fs::path const & destination )
             !fs::is_directory(source)
             )
         {
-            std::cerr << "Source directory " << source.string()
-                << " does not exist or is not a directory." << '\n'
-                ;
+            WARN("Source directory " + source.string()
+                + " does not exist or is not a directory.");
             return false;
         }
         if (fs::exists(destination))
         {
-            std::cerr << "Destination directory " << destination.string()
-                << " already exists." << '\n'
-                ;
+            WARN("Destination directory " + destination.string()
+                + " already exists.");
             return false;
         }
         // Create the destination directory
         if (!fs::create_directory(destination))
         {
-            std::cerr << "Unable to create destination directory"
-                << destination.string() << '\n'
-                ;
+            WARN("Unable to create destination directory " + destination.string());
             return false;
         }
     }
     catch (fs::filesystem_error const & e)
     {
-        std::cerr << e.what() << '\n';
+       WARN(e.what());
         return false;
     }
     // Iterate through the source directory
@@ -219,7 +215,7 @@ bool Copy_Folder(fs::path const & source, fs::path const & destination )
         }
         catch (fs::filesystem_error const & e)
         {
-            std::cerr << e.what() << '\n';
+           WARN(e.what());
         }
     }
     return true;
@@ -559,10 +555,11 @@ TEST_CASE("NOMINAL FAST")
 
 
 
-TEST_CASE("NOMINAL JSON")
+TEST_CASE("JSON")
 {
     const fs::path path_json_left{ fs::temp_directory_path() / "compare_folder_left.json" };
     const fs::path path_json_right{ fs::temp_directory_path() / "compare_folder_right.json" };
+    const fs::path path_json_right_fast{ fs::temp_directory_path() / "compare_folder_right_fast.json" };
     
 	{
 		// Save folder 1 as a JSON file    
@@ -585,8 +582,32 @@ TEST_CASE("NOMINAL JSON")
 		// Use the JSON files to compare the folders
 		const auto diff = cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
 
-    REQUIRE(diff == Diff);
-	}
+        REQUIRE(diff == Diff);
+
+        // Save folder 2 as a JSON file using the FAST hasher
+        std::ofstream stream_json_right_fast{ path_json_right_fast.string(), ios::out };
+        if (!stream_json_right) {
+            throw(runtime_error{ "Cannot create " + path_json_right_fast.string() + " required to complete the test." });
+        }
+        auto json_right_fast = cf::ScanFolder(Folders.second.string(), cf::eCollectingAlgorithm::FAST);
+        cf::WriteWString(stream_json_right_fast, json_right_fast);
+        stream_json_right_fast.close();
+        // Comparison should throw an exception as the hashers are different
+        bool exception = false;
+        try {
+            cf::CompareFolders(cf::json_t{ path_json_right.string() }, cf::json_t{ path_json_right_fast.string() });
+        }
+        catch (const cf::ExceptionFatal&) {
+            exception = true;
+        }
+        catch (...) {
+            WARN("Unexpected Exception received in test \"JSON\"");
+            exception = false;
+        }
+
+        REQUIRE(exception == true);
+    }
+	
 
 	{
 		// Corrupt the json file
@@ -622,10 +643,11 @@ TEST_CASE("NOMINAL JSON")
 
 
 
-
 int main(int argc, char* argv[])
 {
-   
+    CleanUp(Folders);
+    CleanUp(FoldersFast);
+
     srand(static_cast<unsigned>(time(nullptr)));
 
     try {

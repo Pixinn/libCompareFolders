@@ -175,6 +175,7 @@ namespace  cf
         pt::wptree root;
         root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);
         root.put(JSON_KEYS.ALGO_HASH, _algo == eCollectingAlgorithm::FAST ? JSON_CONST_VALUES.ALGO_HASH_FAST : JSON_CONST_VALUES.ALGO_HASH_SECURE);
+        root.put(JSON_KEYS.ROOT, _root.wstring());
         pt::wptree node_files;
         for (const auto& entry : _file_infos) {
             pt::wptree node_info;
