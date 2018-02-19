@@ -15,9 +15,10 @@
 16  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 17 */
 
-#ifndef _SRC_CCollectionHash_hpp__
-#define _SRC_CCollectionHash_hpp__
+#ifndef _SRC_CCollectionInfo_hpp__
+#define _SRC_CCollectionInfo_hpp__
 
+#include <cstdint>
 #include <map>
 #include <vector>
 #include <string>
@@ -34,40 +35,45 @@ namespace  cf {
     /// @details Internally it is built on two symetrical maps that can give the hash of a file or
     /// the files producing a given hash (useful if some files are duplicated).
     /// All operations are **not** thread safe!
-    class CCollectionHash
+    class CCollectionInfo
     {
     public:
 
         /// @brief Informations about a file
         struct info_t {
-            bool operator==(const info_t& rhs) {
+            bool isIdentical(const info_t& rhs) {
                 return hash == rhs.hash;
             }
             std::string hash;           ///< Hash of the file's content
             std::time_t time_modified;  ///< Time of last  modification
+            std::uintmax_t size;
         };
 
         /// @brief Constructor from a given path
         /// @param root Root folder containing the hashed files
-        CCollectionHash(const fs::path& root) noexcept :
-            _root{ root }
+        CCollectionInfo(const fs::path& root, const cf::eCollectingAlgorithm algo) noexcept :
+            _root{ root }, _algo{ algo }
         {   }
-        ~CCollectionHash() = default;
+        ~CCollectionInfo() = default;
+
+        /// @brief Returns the hash algorithm
+        inline cf::eCollectingAlgorithm hasher() const {
+            return _algo;
+        }
         
         /// @brief Adds a hash corresponding to a given path
-        void setHash(const fs::path& path, const info_t& info);
+        void setInfo(const fs::path& path, const info_t& info);
 
-        /// @brief Exports the hashes as a JSON string
-        //std::string json() const;
-		
-		/// @brief Exports the hashes as a JSON string
+ 		
+		/// @brief Exports the info as a JSON string
         std::wstring json() const;
         
         /// @brief Removes the path from the collection
         void removePath(const fs::path& path);
         
         /// @brief Compares the collection to another one.
-        diff_t compare(CCollectionHash rhs) const;
+        /// @details May throw **Exception**
+        diff_t compare(CCollectionInfo rhs) const;
 
         /// @brief returns the number of paths
         inline unsigned size() {
@@ -78,10 +84,11 @@ namespace  cf {
 
         std::map<fs::path, info_t> _file_infos;                 ///< File pathes and their corresponding info
         std::map<std::string, std::list<fs::path>> _hash_files; ///< Hash with the corresponding files. Useful for duplicate files.
-        const fs::path _root;                                   ///< Root folder containing all the files hashed 
+        const fs::path _root;                                   ///< Root folder containing all the files hashed
+        const cf::eCollectingAlgorithm _algo;                   ///< Algotithm used to compute the hashes
     };
     
 }
 
 
-#endif /* _SRC_CCollectionHash_hpp__ */
+#endif /* _SRC_CCollectionInfo_hpp__ */

@@ -1,10 +1,13 @@
-**/build*
-**/bin
-**/lib
-**/Debug
-**/Release
+**/build*/
+**/bin/
+**/Debug/
+**/Release/
+**/doc/
 
-doc
+lib/
 .vs/
 .vscode/
 .DS_Store
+
+!src/lib
+

@@ -47,21 +47,26 @@ int main(int argc, char* argv[])
 {
 
     // Parsing args
-    TCLAP::CmdLine cmd{ "Analyzes the content of a filder and export the result to a JSON file." };
-    TCLAP::ValueArg<string> folder("f", "folder", "The folder to be analyzed", true, "", "Folder's path");
+    TCLAP::CmdLine cmd{ "Scans the content of a directory and export the result to a JSON file." };
+    TCLAP::ValueArg<string> folder("d", "dir", "The directory to be analyzed", true, "", "Directory's path");
     TCLAP::ValueArg<string> output("o", "output", "The JSON file that will contain the descrition of the scanned folder", true, "",  "JSON filepath");
+    TCLAP::SwitchArg fast("f", "fast", "Use the fast algorithm to represent the files' content. Way faster, but less reliable than the default algorithm.");
     cmd.add(folder);
     cmd.add(output);
+    cmd.add(fast);
     cmd.parse(argc, argv);
     const auto path_folder = folder.getValue();
     const auto path_output = output.getValue();
+    const auto fast_hash = fast.getValue();
+    const auto algo = fast_hash ? cf::eCollectingAlgorithm::FAST : cf::eCollectingAlgorithm::SECURE;
+    
 
     cout << "\nSCANNING \"" << path_folder << '\"' << endl;
     
     try {
         
         LogError logErr;
-        const auto json = cf::ScanFolder(path_folder, logErr);
+        const auto json = cf::ScanFolder(path_folder, algo, logErr);
         ofstream stream{ path_output , ios::out };
         if (!stream) {
             throw runtime_error{ "Cannot write to " + path_output };

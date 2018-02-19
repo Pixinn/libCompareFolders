@@ -21,7 +21,7 @@
 #include <boost/property_tree/json_parser.hpp>
 
 #include "CompareFolders.hpp"
-#include "CCollectionHash.hpp"
+#include "CCollectionInfo.hpp"
 
 
 using namespace std;
@@ -34,7 +34,7 @@ namespace  cf
     
     ///////////////////////
 
-    void CCollectionHash::setHash(const fs::path& path, const info_t& info)
+    void CCollectionInfo::setInfo(const fs::path& path, const info_t& info)
     {        
         // Is it the first time a hash is provided for this file?
         {
@@ -63,7 +63,7 @@ namespace  cf
     
     ///////////////////////
     
-    void CCollectionHash::removePath(const fs::path& path)
+    void CCollectionInfo::removePath(const fs::path& path)
     {
         const auto file_info = _file_infos.find(path);
         if(file_info == _file_infos.end()) { // not found
@@ -91,7 +91,7 @@ namespace  cf
     
     ///////////////////////
     
-    diff_t CCollectionHash::compare(CCollectionHash rhs) const
+    diff_t CCollectionInfo::compare(CCollectionInfo rhs) const
     {
 
         list<wstring> identical;
@@ -100,12 +100,16 @@ namespace  cf
         list<wstring> unique_right;
         list<diff_t::renamed_t> list_renamed;
 
+        if (_algo != rhs._algo) {
+            throw Exception{ "The collection to be compared with is based on another hash algorithm." };
+        }
+
         for (const auto& file_info : _file_infos)
         {
             const auto& file_hash_right = rhs._file_infos.find(file_info.first);
             if (file_hash_right != rhs._file_infos.end()) // file with the same relative path
             {
-                if (file_hash_right->second == file_info.second) { // identical
+                if (file_hash_right->second.isIdentical(file_info.second)) { // identical
                     identical.push_back(file_info.first.wstring());
                 }
                 else { // different
@@ -166,16 +170,18 @@ namespace  cf
     }
 
 	/// @details The JSON file is coded in wstring to handle any special character in the filepaths
-	wstring CCollectionHash::json() const
+	wstring CCollectionInfo::json() const
     {
         pt::wptree root;
         root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);
+        root.put(JSON_KEYS.ALGO_HASH, _algo == eCollectingAlgorithm::FAST ? JSON_CONST_VALUES.ALGO_HASH_FAST : JSON_CONST_VALUES.ALGO_HASH_SECURE);
         root.put(JSON_KEYS.ROOT, _root.wstring());
         pt::wptree node_files;
         for (const auto& entry : _file_infos) {
             pt::wptree node_info;
-            node_info.put(JSON_KEYS.CONTENT.HASH, wstring{begin(entry.second.hash), end(entry.second.hash)}); // Workd because hash is plain 7-bit ASCII!
+            node_info.put(JSON_KEYS.CONTENT.HASH, wstring{begin(entry.second.hash), end(entry.second.hash)}); // Works because hash is plain 7-bit ASCII!
             node_info.put(JSON_KEYS.CONTENT.TIME, entry.second.time_modified);
+            node_info.put(JSON_KEYS.CONTENT.SIZE, entry.second.size);
             node_files.push_back(pt::wptree::value_type(entry.first.wstring(), node_info)); // not using "put()" as '.' is its delimiter
         }
         root.add_child(JSON_KEYS.CONTENT.FILES, node_files);

@@ -29,6 +29,7 @@ namespace cf
     static const struct  {
         const std::wstring GENERATOR{ L"Generator" };                 ///< Program used to generate the JSON file
         const std::wstring ROOT{ L"root" };                           ///< Root folder
+        const std::wstring ALGO_HASH{ L"hash" };                      ///< Algorithm used to compute hashes
         const struct  {
             const std::wstring IDENTICAL{ L"identical" };             ///< Identical files
             const std::wstring DIFFERENT{ L"different" };             ///< Different files
@@ -42,12 +43,15 @@ namespace cf
             const std::wstring FILES{ L"files" };                     ///< Files inside a folder
             const std::wstring HASH{ L"hash" };                       ///< Hash of a file's conte,t
             const std::wstring TIME{ L"last_modified" };              ///< Time of file's last modification
+            const std::wstring SIZE{ L"size" };                       ///< Size of the file
         } CONTENT;                                                    ///< Description of a filder's content
     } JSON_KEYS;
 
     /// @brief Description of the const values that pmay be used in JSON files
     static const struct {
         const std::wstring GENERATOR{ L"info.xtof.COMPARE_FOLDERS" };
+        const std::wstring ALGO_HASH_FAST{ L"fast" };
+        const std::wstring ALGO_HASH_SECURE{ L"secure" };
     } JSON_CONST_VALUES;
 
     /// @brief A fatal error occured
@@ -57,6 +61,15 @@ namespace cf
         /// @brief Constructor
         /// @param msg Message explaining the origin of the exception
         ExceptionFatal(const std::string& msg);
+    };
+
+    /// @brief A an error occured which **may** be recoverable
+    class Exception : public std::runtime_error
+    {
+    public:
+        /// @brief Constructor
+        /// @param msg Message explaining the origin of the exception
+        Exception(const std::string& msg);
     };
 
 
@@ -85,7 +98,7 @@ namespace cf
     /// @brief JSON file
 	/// @details This is a mere facade to the path
     typedef struct json_t {
-        json_t(const std::string& p_path) :
+        explicit json_t(const std::string& p_path) :
             path{ p_path }
         {     }        
         const std::string path;
@@ -118,13 +131,21 @@ namespace cf
     } diff_t;
 
 
+    /// @brief Algorithm used to compute file's hashes
+    /// @detailled Hashes are used to find which files are different, or were renamed / moved.
+    typedef enum eHashingAlgorithm {
+        FAST,       ///< **Faster** algorithm. Reliable and sufficient in *most* situation.
+        SECURE      ///< **100% reliable**. Using a *slow* but secure cryptographic hashing function.
+    } eCollectingAlgorithm;
+
+
     /// @brief Compares the content of two folders
     /// @param left First folder's path
     /// @param right Second folder's path
     /// @param logErrors A logger to catch minor errors that could happen. By default, the NULL logger will ignore them.
     /// @details Returns the differences between the two folders.
     ///          Identical files but with a different names are also detected.
-    diff_t CompareFolders(const std::string& left, const std::string& right, ILogError& logErrors = SLogErrorNull::GetInstance());
+    diff_t CompareFolders(const std::string& left, const std::string& right, const eHashingAlgorithm algo, ILogError& logErrors = SLogErrorNull::GetInstance());
 
     /// @brief Compares the content of two JSON files
     /// @param left First JSON file
@@ -148,8 +169,10 @@ namespace cf
     std::wstring Json(const diff_t diff);
 
     /// @brief Analyzes the content of a folder and returns a JSON string
-    /// @param path Path of the folder to be analyzed
-    std::wstring ScanFolder(const std::string& path, ILogError& logErrors = SLogErrorNull::GetInstance());
+    /// @param path          Path of the folder to be analyzed
+    /// @param method        Algorithm used to collect info about the files
+    /// @param logErrors     Error logger
+    std::wstring ScanFolder(const std::string& path, const eHashingAlgorithm algo,  ILogError& logErrors = SLogErrorNull::GetInstance());
 	
 	/// @brief 	Creates a new file containing an UTF-8 representation of the provided wstring
 	/// @details The resulting file will be UTF-8 which *may* be headed by a **BOM**

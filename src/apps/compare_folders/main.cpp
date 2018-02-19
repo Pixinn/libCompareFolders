@@ -48,10 +48,11 @@ int main(int argc, char* argv[])
     try
     {
         // Parsing args
-        TCLAP::CmdLine cmd{ "Compares the content of two folders, given paths or JSON files. If no output is provided, differences will be displayed." };
-        TCLAP::MultiArg<string> folders("f", "folder", "An actual folder to be compared", false, "Folder's path");
-        TCLAP::MultiArg<string> json("j", "json", "A JSON file containing the descrition of a previously scanned folder", false, "JSON filepath");
+        TCLAP::CmdLine cmd{ "Compares the content of two directorues, given paths or JSON files. If no output is provided, differences will be displayed." };
+        TCLAP::MultiArg<string> folders("d", "directory", "An actual directory to be compared", false, "Directory's path");
+        TCLAP::MultiArg<string> json("j", "json", "A JSON file containing the descrition of a previously scanned directory", false, "JSON filepath");
         TCLAP::ValueArg<string> output("o", "output", "A JSON file that will contain the result of the comparison. If provided, no result is displayed on the screen.", false, "", "JSON filepath");
+        TCLAP::SwitchArg fast("f", "fast", "Use the fast algorithm to compare the files' content. Way faster, but less reliable than the default algorithm.");
         cmd.add(folders);
         cmd.add(json);
         cmd.add(output);
@@ -59,6 +60,8 @@ int main(int argc, char* argv[])
         const auto path_folders = folders.getValue();
         const auto path_json = json.getValue();
         const auto path_output = output.getValue();
+        const auto fast_hash = fast.getValue();
+        const auto algo = fast_hash ? cf::eCollectingAlgorithm::FAST : cf::eCollectingAlgorithm::SECURE;
 
         if (path_folders.size() + path_json.size() != 2u) {
             throw(TCLAP::ArgException{ "You shall give two entries (JSON or FOLDER) to be compared.\n\nType \"" + string{argv[0]} + " -h\" for help.\n"});
@@ -74,7 +77,7 @@ int main(int argc, char* argv[])
             if (!path_output.empty()) {
                 cout << "\nCOMPARING\n\n" << '\"' << path_folders[0] << "\"\n\tand\n\"" << path_folders[1] << "\"\n" << endl;
             }
-            result = cf::Json(cf::CompareFolders(path_folders[0], path_folders[1], logErr));
+            result = cf::Json(cf::CompareFolders(path_folders[0], path_folders[1], algo, logErr));
         }
         // Compare one folder and one JSON file
         else if (path_folders.size() == 1)

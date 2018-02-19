@@ -20,6 +20,8 @@
 #include <stdexcept>
 #include <list>
 #include <array>
+#include <vector>
+#include <string>
 
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -40,25 +42,28 @@ using namespace std;
 
 constexpr unsigned MAX_NB_FOLDERS = 10u;
 constexpr unsigned MAX_NB_FILES_PER_FOLDER = 100u;
-constexpr unsigned MAX_NB_FILES_TO_MODIFY = 10u;
+constexpr unsigned MAX_NB_FILES_TO_MODIFY = 7u;
 constexpr unsigned MAX_NB_FILES_TO_ADD = 10u;
 constexpr unsigned MAX_NB_FILES_TO_RENAME = 10u;
 
+static const string FOLDER_ROOT{ "compare_folders" };
+
 
 static pair<fs::path, fs::path> Folders;
+static pair<fs::path, fs::path> FoldersFast;
 static cf::diff_t Diff;
 
 
 /// @rbrief returns the identical files
-list<fs::path> Get_Identical_Files()
+list<fs::path> Get_Identical_Files(const fs::path& dir)
 {
     list<fs::path> identical;
     
-    fs::recursive_directory_iterator it{ Folders.first };
+    fs::recursive_directory_iterator it{ dir };
     fs::recursive_directory_iterator it_end;
     while (it != it_end) { 
         if (fs::is_regular_file(*it)) {
-            identical.push_back(fs::relative(*it, Folders.first));
+            identical.push_back(fs::relative(*it, dir));
         }
         ++it;
     }
@@ -88,11 +93,11 @@ string Random_String(const unsigned length)
 wstring Random_WString(const unsigned length)
 {
     const auto len = (1 + length) & 0xFF;
-    constexpr array<wchar_t, 100u> charset = { 	L'0',L'1',L'2',L'3',L'4',L'5',L'6',L'7',L'8',L'9',
+    constexpr array<wchar_t, 99u> charset = { 	L'0',L'1',L'2',L'3',L'4',L'5',L'6',L'7',L'8',L'9',
                                                 L'a',L'z',L'e',L'r',L't',L'y',L'u',L'i',L'o',L'p',L'q',L's',L'd',L'f',L'g',L'h',L'j',L'k',L'l',L'm',L'w',L'x',L'c',L'v',L'b',L'n',
                                                 L'A',L'Z',L'E',L'R',L'T',L'Y',L'U',L'I',L'O',L'P',L'Q',L'S',L'D',L'F',L'G',L'H',L'J',L'K',L'L',L'M',L'W',L'X',L'C',L'V',L'B',L'N',                                                
                                                 L'α',L'β',L'γ',L'δ',L'ε',L'ख',L'ग',L'घ',L'ङ',L'च',L'僃',L'僄',L'僅',L'僆',L'僇',L'љ',L'њ',L'ћ',L'ќ',L'ѝ',L'س',L'ڇ',L'ڲ',L'غ',L'؁',
-                                                L'.',L'&',L'é',L'²',L'è',L'ç',L'à',L'@',L'$',L'£',L'€',L'☂',L'☣'};
+                                                L'&',L'é',L'²',L'è',L'ç',L'à',L'@',L'$',L'£',L'€',L'☂',L'☣'};
 	const auto size_charset = charset.size();
 	unique_ptr<wchar_t[]> buffer{ new wchar_t[len + 1] };
 	for (auto i = 0u; i < len; ++i) {
@@ -161,30 +166,26 @@ bool Copy_Folder(fs::path const & source, fs::path const & destination )
             !fs::is_directory(source)
             )
         {
-            std::cerr << "Source directory " << source.string()
-                << " does not exist or is not a directory." << '\n'
-                ;
+            WARN("Source directory " + source.string()
+                + " does not exist or is not a directory.");
             return false;
         }
         if (fs::exists(destination))
         {
-            std::cerr << "Destination directory " << destination.string()
-                << " already exists." << '\n'
-                ;
+            WARN("Destination directory " + destination.string()
+                + " already exists.");
             return false;
         }
         // Create the destination directory
         if (!fs::create_directory(destination))
         {
-            std::cerr << "Unable to create destination directory"
-                << destination.string() << '\n'
-                ;
+            WARN("Unable to create destination directory " + destination.string());
             return false;
         }
     }
     catch (fs::filesystem_error const & e)
     {
-        std::cerr << e.what() << '\n';
+       WARN(e.what());
         return false;
     }
     // Iterate through the source directory
@@ -214,27 +215,27 @@ bool Copy_Folder(fs::path const & source, fs::path const & destination )
         }
         catch (fs::filesystem_error const & e)
         {
-            std::cerr << e.what() << '\n';
+           WARN(e.what());
         }
     }
     return true;
 }
 
 
-/// @brief Builds a file tree to perform the tests on
-///        Returns the files that were created
+/// @brief      Builds a file tree to perform the tests on.
+/// @details    It will be directly used by tests of the *secure* hash. 
+///             Tests of the *fast* hash will use some of those files.
+///             Returns the files that were created
 pair<fs::path, fs::path> Build_Test_Files()
 {
     list<fs::path> files;
 
     const auto folder_tmp = fs::temp_directory_path();
-    const auto folder_left = folder_tmp / "left";
-    const auto folder_right = folder_tmp / "right";
-    if (!fs::exists(folder_left) && !fs::create_directory(folder_left)) {
+    const auto folder_left = folder_tmp / FOLDER_ROOT / "secure" / "left";
+    const auto folder_right = folder_tmp / FOLDER_ROOT / "secure" / "right";
+    if (!fs::exists(folder_left) && !fs::create_directories(folder_left)) {
         throw runtime_error{ "Cannot create folder " + folder_left.string() };
-    }
-
-    srand(static_cast<unsigned>(time(nullptr)));
+    }    
 
     const unsigned nb_folders = (rand() % (MAX_NB_FOLDERS -1))+1;
     for (auto i = 0u; i < nb_folders; ++i) {
@@ -247,6 +248,68 @@ pair<fs::path, fs::path> Build_Test_Files()
 
     return { folder_left, folder_right };
     
+}
+
+
+/// @brief      Builds a file tree to perform the tests of the *fast* hash  on.
+/// @details    Returns the files that were created
+/// @param      nb_files Number of *base* files to run the test on
+/// @param      dir_source Files to use as a source for the *test files*
+pair<fs::path, fs::path> Build_Test_Fast_Files(const unsigned nb_files, const fs::path& dir_source)
+{
+    // create test dirs
+    const auto folder_tmp = fs::temp_directory_path();
+    const auto folder_left = folder_tmp / FOLDER_ROOT / "fast" / "left";
+    const auto folder_right = folder_tmp / FOLDER_ROOT / "fast" / "right";
+    if (!fs::exists(folder_left) && !fs::create_directories(folder_left)) {
+        throw runtime_error{ "Cannot create folder " + folder_left.string() };
+    }
+
+
+    // list all source files
+    vector<fs::path> files;
+    fs::recursive_directory_iterator file{ dir_source };
+    while (file != fs::recursive_directory_iterator{}) {
+        if (!fs::is_directory(*file)) {
+            files.push_back(*file);
+        }
+        ++file;
+    }
+    if (files.size() < nb_files) {
+        throw std::runtime_error{ "Bad luck error width randomness: Not enough files were generated. Try again." };
+    }
+    // copy random files in test dir
+    class CInfo {
+    public:
+        CInfo(const time_t mod, const uintmax_t sz) :
+            last_modification{ mod }, size{ sz }
+        {   }
+        inline bool operator==(const CInfo& rhs) {
+            return rhs.last_modification == last_modification && rhs.size == size;
+        }
+        time_t last_modification;
+        uintmax_t size;
+    };
+    list<fs::path> files_ok;
+    vector<CInfo> infos;
+    for (auto i = 0u; i < nb_files; ++i)
+    {
+        const auto idx = rand() % files.size();
+        const auto path = files[idx];
+        const CInfo info{ fs::last_write_time(path), fs::file_size(path) };
+        if (find(begin(infos), end(infos), info) == end(infos)) { // suitable file : no other with the exact same size and date
+            infos.push_back(info);
+            fs::copy_file(
+                path,
+                folder_left / path.filename()
+            );
+        }
+    }
+
+    Copy_Folder(folder_left, folder_right);
+
+    return { folder_left, folder_right };
+
 }
 
 
@@ -304,10 +367,22 @@ vector<fs::path> Add_Files(const fs::path& folder)
     }
     // add files
     const uint8_t nb_files = 1 + (rand() % (MAX_NB_FILES_TO_ADD - 1));
-    for (auto i = 0u; i < nb_files; ++i) {
-        auto idx = rand() % subfolders.size();
-        auto files = Create_Random_Files(subfolders[idx], 1);
-        files_added.insert(end(files_added), begin(files), end(files));
+    for (auto i = 0u; i < nb_files; ++i)
+    {
+        if (!subfolders.empty()) {
+            auto idx = rand() % subfolders.size();
+            auto subfolder = subfolders[idx];
+            auto files = Create_Random_Files(subfolder, 1);
+            files_added.insert(end(files_added), begin(files), end(files));
+        }
+        else {
+            auto files = Create_Random_Files(folder, 1);
+            for (auto& file : files) {
+                file = fs::relative(file, file.parent_path());
+            }
+            files_added.insert(end(files_added), begin(files), end(files));
+        }
+
     }
 
     return files_added;
@@ -359,7 +434,7 @@ TEST_CASE("BAD FOLDER TO COMPARE")
     bool bad_right_foldder = false;
 
     try {
-        cf::CompareFolders(".", folder_random);
+        cf::CompareFolders(".", folder_random, cf::eCollectingAlgorithm::SECURE);
     }
     catch (const cf::ExceptionFatal&) {
         bad_right_foldder = true;
@@ -367,7 +442,7 @@ TEST_CASE("BAD FOLDER TO COMPARE")
     REQUIRE(bad_right_foldder == true);
 
     try {
-        cf::CompareFolders(folder_random, ".");
+        cf::CompareFolders(folder_random, ".", cf::eCollectingAlgorithm::SECURE);
     }
     catch (const cf::ExceptionFatal&) {
         bad_left_folder = true;
@@ -377,10 +452,10 @@ TEST_CASE("BAD FOLDER TO COMPARE")
 
 
 
-TEST_CASE("NOMINAL")
+TEST_CASE("NOMINAL SECURE")
 {
     // Get the identical files list
-    auto files_identical = Get_Identical_Files();
+    auto files_identical = Get_Identical_Files(Folders.first);
 
     // Modify some
     auto files_modified = Modify_Files(Folders.first, files_identical);
@@ -397,7 +472,8 @@ TEST_CASE("NOMINAL")
     auto files_renamed = Rename_Files(Folders.first, files_identical);
 
     // Compare
-    Diff = cf::CompareFolders(Folders.first.string(), Folders.second.string());
+    Diff = cf::CompareFolders(Folders.first.string(), Folders.second.string(), cf::eCollectingAlgorithm::SECURE);
+
 
     // Check results
     REQUIRE(Diff.identical.size() == files_identical.size());
@@ -410,14 +486,23 @@ TEST_CASE("NOMINAL")
     }
     REQUIRE(Diff.unique_left.size() == files_unique_left.size());
     for (auto& entry : Diff.unique_left) {
+        if (find(begin(files_unique_left), end(files_unique_left), entry) == end(files_unique_left)) {
+            wcout << "NOT FOUND: " << entry;
+        }
         REQUIRE(find(begin(files_unique_left), end(files_unique_left), entry) != end(files_unique_left));
     }
     REQUIRE(Diff.unique_right.size() == files_unique_right.size());
     for (auto& entry : Diff.unique_right) {
+        if (find(begin(files_unique_right), end(files_unique_right), entry) == end(files_unique_right)) {
+            wcout << "NOT FOUND: " << entry;
+        }
         REQUIRE(find(begin(files_unique_right), end(files_unique_right), entry) != end(files_unique_right));
     }
     REQUIRE(Diff.renamed.size() == files_renamed.size());
     for (auto& entry : Diff.renamed) {
+        if (find(begin(files_renamed), end(files_renamed), *begin(entry.left)) == end(files_renamed)) {
+            wcout << "NOT FOUND: " << *begin(entry.left);
+        }
         REQUIRE(find(begin(files_renamed), end(files_renamed), *begin(entry.left)) != end(files_renamed)); // Works because file were renamed in LEFT and there was no duplication
     }
    
@@ -425,10 +510,56 @@ TEST_CASE("NOMINAL")
 
 
 
+
+
+TEST_CASE("NOMINAL FAST")
+{
+    // Get the identical files list
+    auto files_identical = Get_Identical_Files(FoldersFast.first);
+
+    // Modify some
+    Sleep(1000);
+    auto files_modified = Modify_Files(FoldersFast.first, files_identical);
+    Sleep(1000);
+    auto files_modified_right = Modify_Files(FoldersFast.second, files_identical);
+    files_modified.insert(end(files_modified), begin(files_modified_right), end(files_modified_right));
+
+    // Add unique files
+    Sleep(1000);
+    auto files_unique_left = Add_Files(FoldersFast.first);
+    Sleep(1000);
+    auto files_unique_right = Add_Files(FoldersFast.second);
+
+    // Compare
+    auto diff = cf::CompareFolders(FoldersFast.first.string(), FoldersFast.second.string(), cf::eCollectingAlgorithm::FAST);
+
+    // Check results
+    REQUIRE(diff.identical.size() == files_identical.size());
+    for (auto& entry : diff.identical) {
+        REQUIRE(find(begin(files_identical), end(files_identical), entry) != end(files_identical));
+    }
+    REQUIRE(diff.different.size() == files_modified.size());
+    for (auto& entry : diff.different) {
+        REQUIRE(find(begin(files_modified), end(files_modified), entry) != end(files_modified));
+    }
+    REQUIRE(diff.unique_left.size() == files_unique_left.size());
+    for (auto& entry : diff.unique_left) {
+        REQUIRE(find(begin(files_unique_left), end(files_unique_left), entry) != end(files_unique_left));
+    }
+    REQUIRE(diff.unique_right.size() == files_unique_right.size());
+    for (auto& entry : diff.unique_right) {
+        REQUIRE(find(begin(files_unique_right), end(files_unique_right), entry) != end(files_unique_right));
+    }
+}
+
+
+
+
 TEST_CASE("JSON")
 {
     const fs::path path_json_left{ fs::temp_directory_path() / "compare_folder_left.json" };
     const fs::path path_json_right{ fs::temp_directory_path() / "compare_folder_right.json" };
+    const fs::path path_json_right_fast{ fs::temp_directory_path() / "compare_folder_right_fast.json" };
     
 	{
 		// Save folder 1 as a JSON file    
@@ -436,7 +567,7 @@ TEST_CASE("JSON")
 		if (!stream_json_left) {
 			throw(runtime_error{ "Cannot create " + path_json_left.string() + " required to complete the test." });
 		}
-		auto json_left = cf::ScanFolder(Folders.first.string());
+		auto json_left = cf::ScanFolder(Folders.first.string(), cf::eCollectingAlgorithm::SECURE);
 		cf::WriteWString(stream_json_left, json_left);
 		stream_json_left.close();
 		// Save folder 2 as a JSON file    
@@ -444,15 +575,39 @@ TEST_CASE("JSON")
 		if (!stream_json_right) {
 			throw(runtime_error{ "Cannot create " + path_json_right.string() + " required to complete the test." });
 		}
-		auto json_right = cf::ScanFolder(Folders.second.string());
+		auto json_right = cf::ScanFolder(Folders.second.string(), cf::eCollectingAlgorithm::SECURE);
 		cf::WriteWString(stream_json_right, json_right);
 		stream_json_right.close();
 
 		// Use the JSON files to compare the folders
 		const auto diff = cf::CompareFolders(cf::json_t{ path_json_left.string() }, cf::json_t{ path_json_right.string() });
 
-    REQUIRE(diff == Diff);
-	}
+        REQUIRE(diff == Diff);
+
+        // Save folder 2 as a JSON file using the FAST hasher
+        std::ofstream stream_json_right_fast{ path_json_right_fast.string(), ios::out };
+        if (!stream_json_right) {
+            throw(runtime_error{ "Cannot create " + path_json_right_fast.string() + " required to complete the test." });
+        }
+        auto json_right_fast = cf::ScanFolder(Folders.second.string(), cf::eCollectingAlgorithm::FAST);
+        cf::WriteWString(stream_json_right_fast, json_right_fast);
+        stream_json_right_fast.close();
+        // Comparison should throw an exception as the hashers are different
+        bool exception = false;
+        try {
+            cf::CompareFolders(cf::json_t{ path_json_right.string() }, cf::json_t{ path_json_right_fast.string() });
+        }
+        catch (const cf::ExceptionFatal&) {
+            exception = true;
+        }
+        catch (...) {
+            WARN("Unexpected Exception received in test \"JSON\"");
+            exception = false;
+        }
+
+        REQUIRE(exception == true);
+    }
+	
 
 	{
 		// Corrupt the json file
@@ -488,16 +643,31 @@ TEST_CASE("JSON")
 
 
 
+int main(int argc, char* argv[])
+{
+    CleanUp(Folders);
+    CleanUp(FoldersFast);
 
-int main(int argc, char* argv[]) {
-    
-    // global setup...
-    Folders = Build_Test_Files();
+    srand(static_cast<unsigned>(time(nullptr)));
 
-    int result = Catch::Session().run(argc, argv);
+    try {
+        // global setup...
+        Folders = Build_Test_Files();
+        FoldersFast = Build_Test_Fast_Files(20, Folders.first);
+    }
+    catch (const exception& e) {
+        cout << e.what() << endl;
+        // global clean-up...
+        CleanUp(Folders);
+        CleanUp(FoldersFast);
+        return -1;
+    }
+
+    auto result = Catch::Session().run(argc, argv);
 
     // global clean-up...
     CleanUp(Folders);
+    CleanUp(FoldersFast);
 
     return result;
 }
