@@ -100,6 +100,10 @@ namespace  cf
         list<wstring> unique_right;
         list<diff_t::renamed_t> list_renamed;
 
+        if (_algo != rhs._algo) {
+            throw Exception{ "The collection to be compared with is based on another hash algorithm." };
+        }
+
         for (const auto& file_info : _file_infos)
         {
             const auto& file_hash_right = rhs._file_infos.find(file_info.first);
@@ -170,7 +174,7 @@ namespace  cf
     {
         pt::wptree root;
         root.put(JSON_KEYS.GENERATOR, JSON_CONST_VALUES.GENERATOR);
-        root.put(JSON_KEYS.ROOT, _root.wstring());
+        root.put(JSON_KEYS.ALGO_HASH, _algo == eCollectingAlgorithm::FAST ? JSON_CONST_VALUES.ALGO_HASH_FAST : JSON_CONST_VALUES.ALGO_HASH_SECURE);
         pt::wptree node_files;
         for (const auto& entry : _file_infos) {
             pt::wptree node_info;

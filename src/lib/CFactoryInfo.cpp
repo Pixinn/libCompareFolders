@@ -68,7 +68,7 @@ namespace cf {
     
     ///////////////////////
 
-    CCollectionInfo AFactoryInfo::readHashes(const fs::path& json_path) const
+    CCollectionInfo AFactoryInfo::ReadInfo(const fs::path& json_path)
     {
         // Prepare the wide string stream
         if (!fs::is_regular_file(json_path)) {
@@ -86,7 +86,9 @@ namespace cf {
         if (generator != JSON_CONST_VALUES.GENERATOR) {
             throw ExceptionFatal{ "This is not a proper file." };
         }
-        CCollectionInfo collection{ fs::path{ root.get<wstring>(JSON_KEYS.ROOT) } };
+        const auto algo_hash = root.get<wstring>(JSON_KEYS.ALGO_HASH);
+        CCollectionInfo collection{ fs::path{ root.get<wstring>(JSON_KEYS.ROOT) },
+                                    algo_hash == JSON_CONST_VALUES.ALGO_HASH_FAST ? eCollectingAlgorithm::FAST  : eCollectingAlgorithm::SECURE };
 
         try {
             for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
@@ -113,9 +115,9 @@ namespace cf {
     /// @detailed   All hashes are computed using a cryptographic hasher. 
     ///             Collecting info can take some time. Thus, an external error logger must be provided
     ///             to give the opportunity to report the errors in real time.
-    CCollectionInfo CFactoryInfoSecure::computeHashes(const fs::path& root, ILogError& logger) const
+    CCollectionInfo CFactoryInfoSecure::collectInfo(const fs::path& root, ILogError& logger) const
     {
-        CCollectionInfo info{ root };
+        CCollectionInfo info{ root, eCollectingAlgorithm::SECURE };
 
         try
         {
@@ -155,10 +157,10 @@ namespace cf {
     ///             Thus, the time consuming *secure* hash is only computed for those duplicates.
     ///             Collecting info can take some time. Thus, an external error logger must be provided
     ///             to give the opportunity to report the errors in real time.
-    CCollectionInfo CFactoryInfoFast::computeHashes(const fs::path& root, ILogError& logger) const
+    CCollectionInfo CFactoryInfoFast::collectInfo(const fs::path& root, ILogError& logger) const
     {
        
-        CCollectionInfo collection_info{ root };
+        CCollectionInfo collection_info{ root,  eCollectingAlgorithm::FAST};
         try
         {
             const auto paths = listFiles(root);

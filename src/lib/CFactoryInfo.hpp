@@ -35,14 +35,14 @@ namespace  cf {
     public:
         virtual ~AFactoryInfo() = default;
 
-        /// @brief Builds a collection from the values store in a JSON file
+        /// @brief This **static** operation builds a collection from the values stored in a JSON file
         /// @param json_path Pth to the JSON file storing the hashes
-        CCollectionInfo readHashes(const fs::path& json_path) const;
+        static CCollectionInfo ReadInfo(const fs::path& json_path);
 
         /// @brief Builds a collection with all the directory's files' hashes
         /// @param root Root folder: all its files will be hashed
         /// @param loggerErr Will log eventual errors
-        virtual CCollectionInfo computeHashes(const fs::path& root, ILogError& loggerErr) const = 0;
+        virtual CCollectionInfo collectInfo(const fs::path& root, ILogError& loggerErr) const = 0;
     
     protected:
         AFactoryInfo() = default;
@@ -63,7 +63,7 @@ namespace  cf {
         /// @brief Builds a collection with all the directory's files' hashes
         /// @param root Root folder: all its files will be hashed
         /// @param loggerErr Will log eventual errors
-        CCollectionInfo computeHashes(const fs::path& root, ILogError& loggerErr) const override;
+        CCollectionInfo collectInfo(const fs::path& root, ILogError& loggerErr) const override;
     };
 
     /// @brief      *Quickly* collects info about files.
@@ -78,7 +78,7 @@ namespace  cf {
         /// @brief Builds a collection with all the directory's files' hashes
         /// @param root Root folder: all its files will be hashed
         /// @param loggerErr Will log eventual errors
-        CCollectionInfo computeHashes(const fs::path& root, ILogError& loggerErr) const override;
+        CCollectionInfo collectInfo(const fs::path& root, ILogError& loggerErr) const override;
 
     private:
         /// @brief Computes and returns the "*fast hash*" from the info provided

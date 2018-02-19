@@ -29,6 +29,7 @@ namespace cf
     static const struct  {
         const std::wstring GENERATOR{ L"Generator" };                 ///< Program used to generate the JSON file
         const std::wstring ROOT{ L"root" };                           ///< Root folder
+        const std::wstring ALGO_HASH{ L"hash" };                      ///< Algorithm used to compute hashes
         const struct  {
             const std::wstring IDENTICAL{ L"identical" };             ///< Identical files
             const std::wstring DIFFERENT{ L"different" };             ///< Different files
@@ -49,6 +50,8 @@ namespace cf
     /// @brief Description of the const values that pmay be used in JSON files
     static const struct {
         const std::wstring GENERATOR{ L"info.xtof.COMPARE_FOLDERS" };
+        const std::wstring ALGO_HASH_FAST{ L"fast" };
+        const std::wstring ALGO_HASH_SECURE{ L"secure" };
     } JSON_CONST_VALUES;
 
     /// @brief A fatal error occured
@@ -58,6 +61,15 @@ namespace cf
         /// @brief Constructor
         /// @param msg Message explaining the origin of the exception
         ExceptionFatal(const std::string& msg);
+    };
+
+    /// @brief A an error occured which **may** be recoverable
+    class Exception : public std::runtime_error
+    {
+    public:
+        /// @brief Constructor
+        /// @param msg Message explaining the origin of the exception
+        Exception(const std::string& msg);
     };
 
 

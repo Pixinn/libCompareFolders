@@ -51,10 +51,15 @@ namespace  cf {
 
         /// @brief Constructor from a given path
         /// @param root Root folder containing the hashed files
-        CCollectionInfo(const fs::path& root) noexcept :
-            _root{ root }
+        CCollectionInfo(const fs::path& root, const cf::eCollectingAlgorithm algo) noexcept :
+            _root{ root }, _algo{ algo }
         {   }
         ~CCollectionInfo() = default;
+
+        /// @brief Returns the hash algorithm
+        inline cf::eCollectingAlgorithm hasher() const {
+            return _algo;
+        }
         
         /// @brief Adds a hash corresponding to a given path
         void setInfo(const fs::path& path, const info_t& info);
@@ -67,6 +72,7 @@ namespace  cf {
         void removePath(const fs::path& path);
         
         /// @brief Compares the collection to another one.
+        /// @details May throw **Exception**
         diff_t compare(CCollectionInfo rhs) const;
 
         /// @brief returns the number of paths
@@ -78,7 +84,8 @@ namespace  cf {
 
         std::map<fs::path, info_t> _file_infos;                 ///< File pathes and their corresponding info
         std::map<std::string, std::list<fs::path>> _hash_files; ///< Hash with the corresponding files. Useful for duplicate files.
-        const fs::path _root;                                   ///< Root folder containing all the files hashed 
+        const fs::path _root;                                   ///< Root folder containing all the files hashed
+        const cf::eCollectingAlgorithm _algo;                   ///< Algotithm used to compute the hashes
     };
     
 }
