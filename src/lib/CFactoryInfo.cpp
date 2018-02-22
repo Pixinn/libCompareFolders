@@ -23,6 +23,7 @@
 #include <codecvt>
 #include <iostream>
 #include <sstream>
+#include <future>
 
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -115,60 +116,57 @@ namespace cf {
     /// @detailed   All hashes are computed using a cryptographic hasher. 
     ///             Collecting info can take some time. Thus, an external error logger must be provided
     ///             to give the opportunity to report the errors in real time.
-    CCollectionInfo CFactoryInfoSecure::collectInfo(const fs::path& root, ILogError& logger) const
+    CCollectionInfo CFactoryInfoSecure::collectInfo(const fs::path& root, ILogError&) const
     {
-        // split work
+        // split work for tasks
         const auto paths_files = listFiles(root);
         const auto works = splitPaths(paths_files, _nbThreads);
             
-        // construct and launch threaded workers
+        // construct the tasks and launch threaded workers
         typedef struct resultWork_t {
             fs::path path_relative;
             CCollectionInfo::info_t info;
         } resultWork_t; ///< structure containing a file's info collected
-        vector<thread> workers(_nbThreads);
-        vector<list<resultWork_t>> results_from_threads(_nbThreads, list<resultWork_t>{});
-        auto ptr_result = begin(results_from_threads);
-        for(const auto& work : works)
+
+        vector<thread> workers;
+        vector<future<list<resultWork_t>>> future_results;
+        for(const auto& paths : works)
         {
-            workers.emplace_back(
-                [root, ptr_result, &work, &logger] ( ) -> void
+            packaged_task<list<resultWork_t>(const fs::path&, const list<fs::path>&)> task{
+                [] (const fs::path& root, const list<fs::path>& paths)
                 {
-                    try {
-                        for(const auto& path : work)
-                        {
-                            constexpr bool isUpperCase = true;
-                            string hash;
-                            CryptoPP::SHA1 hasher;
-                            CryptoPP::FileSource(path.c_str(), true,
-                                new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
-                            );
-                            ptr_result->emplace_back<resultWork_t>( {
-                                fs::relative(path, root),
-                                { hash, fs::last_write_time(path), fs::file_size(path) }
-                            });
-                        }
+                    list<resultWork_t> results;
+                    for(const auto& path : paths)
+                    {
+                        constexpr bool isUpperCase = true;
+                        string hash;
+                        CryptoPP::SHA1 hasher;
+                        CryptoPP::FileSource(path.c_str(), true,
+                            new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
+                        );
+                        results.emplace_back<resultWork_t>( {
+                            fs::relative(path, root),
+                            { hash, fs::last_write_time(path), fs::file_size(path) }
+                        });
                     }
-                    catch (const CryptoPP::Exception& e) {
-                        const string message = string{ "Hashing error: " } + e.what();
-                        logger.log(message);
-                    }
-                    catch (const fs::filesystem_error& e) {
-                        const string message = string{ "Filesystem error: " } + e.what();
-                        logger.log(message);
-                    }
-                });
-            ++ptr_result;
+                    return results;
+                } // lambda
+            }; // packaged_task
+
+            future_results.emplace_back(task.get_future()); // storing the future for the result
+            workers.emplace_back(std::move(task), root, paths); // creating (and starting) the thread with the task
         }
 
-        // wait for the workers to fininsh their job
-        for(auto& worker : workers) {
-            worker.join();
+        // Detaching the threads avoids terminate() in case of an exception
+        for( auto& worker : workers ) {
+            worker.detach();
         }
 
-        // set the collected info
+        // Collect the result
         CCollectionInfo info{ root, eCollectingAlgorithm::SECURE };
-        for(const auto& results : results_from_threads) {
+        for(auto& future_result : future_results) {
+            // TODO try catch
+            auto results = future_result.get();
             for(const auto& result : results) {
                 info.setInfo(result.path_relative, result.info);
             }
