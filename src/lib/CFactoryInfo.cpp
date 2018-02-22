@@ -117,39 +117,86 @@ namespace cf {
     ///             to give the opportunity to report the errors in real time.
     CCollectionInfo CFactoryInfoSecure::collectInfo(const fs::path& root, ILogError& logger) const
     {
-        CCollectionInfo info{ root, eCollectingAlgorithm::SECURE };
-
-        try
+        // split work
+        const auto paths_files = listFiles(root);
+        const auto works = splitPaths(paths_files, _nbThreads);
+            
+        // construct and launch threaded workers
+        typedef struct resultWork_t {
+            fs::path path_relative;
+            CCollectionInfo::info_t info;
+        } resultWork_t; ///< structure containing a file's info collected
+        vector<thread> workers(_nbThreads);
+        vector<list<resultWork_t>> results_from_threads(_nbThreads, list<resultWork_t>{});
+        auto ptr_result = begin(results_from_threads);
+        for(const auto& work : works)
         {
-            const auto paths = listFiles(root);
-            for (const auto& path : paths)
-            {
-                constexpr bool isUpperCase = true;
-                string hash;
-                CryptoPP::SHA1 hasher;
-                CryptoPP::FileSource(path.c_str(), true, \
-                    new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
-                );
-                const auto path_relative = fs::relative(path, root);
-                const auto time_modified = fs::last_write_time(path);
-                const auto size = fs::file_size(path);
+            workers.emplace_back(
+                [root, work, ptr_result, &logger] ( ) mutable -> void
+                {
+                    try {
+                        for(const auto& path : work)
+                        {
+                            constexpr bool isUpperCase = true;
+                            string hash;
+                            CryptoPP::SHA1 hasher;
+                            CryptoPP::FileSource(path.c_str(), true,
+                                new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
+                            );
+                            ptr_result->emplace_back<resultWork_t>( {
+                                fs::relative(path, root),
+                                { hash, fs::last_write_time(path), fs::file_size(path) }
+                            });
+                        }
+                    }
+                    catch (const CryptoPP::Exception& e) {
+                        const string message = string{ "Hashing error: " } + e.what();
+                        logger.log(message);
+                    }
+                    catch (const fs::filesystem_error& e) {
+                        const string message = string{ "Filesystem error: " } + e.what();
+                        logger.log(message);
+                    }
+                });
+            ++ptr_result;
+        }
 
-                info.setInfo(path_relative, { hash, time_modified, size });
+        // wait for the workers to fininsh their job
+        for(auto& worker : workers) {
+            worker.join();
+        }
+
+        // set the collected info
+        CCollectionInfo info{ root, eCollectingAlgorithm::SECURE };
+        for(const auto& results : results_from_threads) {
+            for(const auto& result : results) {
+                info.setInfo(result.path_relative, result.info);
             }
-        }
-        catch (const CryptoPP::Exception& e) {
-            const string message = string{ "Hashing error: " } +e.what();
-            logger.log(message);
-            throw;  // TODO handle and don't rethrow
-        }
-        catch (const fs::filesystem_error& e) {
-            const string message = string{ "Filesystem error: " } +e.what();
-            logger.log(message);
-            throw; // TODO handle and don't rethrow
         }
 
         return info;
     }
+
+
+     vector<list<fs::path>> CFactoryInfoSecure::splitPaths(const list<fs::path>& paths, const unsigned nb_slices) const
+     {
+        vector<list<fs::path>> splitted;
+        for(auto i = 0u; i < nb_slices; ++i) {
+            splitted.push_back(list<fs::path>{});
+        }
+
+        auto slice = begin(splitted);
+        for(const auto& path : paths)
+        {
+            slice->push_back(path);
+            ++slice;
+            if(slice == end(splitted)) {
+                slice = begin(splitted);
+            }
+        }
+         
+        return splitted;
+     }
 
 
     /// @detailed   All *pseudo-hashes* are computed by combining the size of the file and its last modification time. 
