@@ -64,7 +64,7 @@ namespace  cf {
     {
     public:
         explicit CFactoryInfoSecure() :
-            _nbThreads{std::min(1u, std::thread::hardware_concurrency())}
+            _nbThreads{std::max(1u, std::thread::hardware_concurrency())}
         {   }
         ~CFactoryInfoSecure() = default;
     

@@ -132,7 +132,7 @@ namespace cf {
         for(const auto& work : works)
         {
             workers.emplace_back(
-                [root, work, ptr_result, &logger] ( ) mutable -> void
+                [root, ptr_result, &work, &logger] ( ) -> void
                 {
                     try {
                         for(const auto& path : work)
