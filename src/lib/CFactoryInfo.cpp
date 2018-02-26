@@ -23,6 +23,7 @@
 #include <codecvt>
 #include <iostream>
 #include <sstream>
+#include <future>
 
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -115,41 +116,85 @@ namespace cf {
     /// @detailed   All hashes are computed using a cryptographic hasher. 
     ///             Collecting info can take some time. Thus, an external error logger must be provided
     ///             to give the opportunity to report the errors in real time.
-    CCollectionInfo CFactoryInfoSecure::collectInfo(const fs::path& root, ILogError& logger) const
+    CCollectionInfo CFactoryInfoSecure::collectInfo(const fs::path& root, ILogError&) const
     {
-        CCollectionInfo info{ root, eCollectingAlgorithm::SECURE };
+        // split work for tasks
+        const auto paths_files = listFiles(root);
+        const auto works = splitPaths(paths_files, _nbThreads);
+            
+        // construct the tasks and launch threaded workers
+        typedef struct resultWork_t {
+            fs::path path_relative;
+            CCollectionInfo::info_t info;
+        } resultWork_t; ///< structure containing a file's info collected
 
-        try
+        vector<thread> workers;
+        vector<future<list<resultWork_t>>> future_results;
+        for(const auto& paths : works)
         {
-            const auto paths = listFiles(root);
-            for (const auto& path : paths)
-            {
-                constexpr bool isUpperCase = true;
-                string hash;
-                CryptoPP::SHA1 hasher;
-                CryptoPP::FileSource(path.c_str(), true, \
-                    new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
-                );
-                const auto path_relative = fs::relative(path, root);
-                const auto time_modified = fs::last_write_time(path);
-                const auto size = fs::file_size(path);
+            packaged_task<list<resultWork_t>(const fs::path&, const list<fs::path>&)> task{
+                [] (const fs::path& root, const list<fs::path>& paths)
+                {
+                    list<resultWork_t> results;
+                    for(const auto& path : paths)
+                    {
+                        constexpr bool isUpperCase = true;
+                        string hash;
+                        CryptoPP::SHA1 hasher;
+                        CryptoPP::FileSource(path.c_str(), true,
+                            new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
+                        );
+                        results.emplace_back<resultWork_t>( {
+                            fs::relative(path, root),
+                            { hash, fs::last_write_time(path), fs::file_size(path) }
+                        });
+                    }
+                    return results;
+                } // lambda
+            }; // packaged_task
 
-                info.setInfo(path_relative, { hash, time_modified, size });
+            future_results.emplace_back(task.get_future()); // storing the future for the result
+            workers.emplace_back(std::move(task), root, paths); // creating (and starting) the thread with the task
+        }
+
+        // Detaching the threads avoids terminate() in case of an exception
+        for( auto& worker : workers ) {
+            worker.detach();
+        }
+
+        // Collect the result
+        CCollectionInfo info{ root, eCollectingAlgorithm::SECURE };
+        for(auto& future_result : future_results) {
+            // TODO try catch
+            auto results = future_result.get();
+            for(const auto& result : results) {
+                info.setInfo(result.path_relative, result.info);
             }
-        }
-        catch (const CryptoPP::Exception& e) {
-            const string message = string{ "Hashing error: " } +e.what();
-            logger.log(message);
-            throw;  // TODO handle and don't rethrow
-        }
-        catch (const fs::filesystem_error& e) {
-            const string message = string{ "Filesystem error: " } +e.what();
-            logger.log(message);
-            throw; // TODO handle and don't rethrow
         }
 
         return info;
     }
+
+
+     vector<list<fs::path>> CFactoryInfoSecure::splitPaths(const list<fs::path>& paths, const unsigned nb_slices) const
+     {
+        vector<list<fs::path>> splitted;
+        for(auto i = 0u; i < nb_slices; ++i) {
+            splitted.push_back(list<fs::path>{});
+        }
+
+        auto slice = begin(splitted);
+        for(const auto& path : paths)
+        {
+            slice->push_back(path);
+            ++slice;
+            if(slice == end(splitted)) {
+                slice = begin(splitted);
+            }
+        }
+         
+        return splitted;
+     }
 
 
     /// @detailed   All *pseudo-hashes* are computed by combining the size of the file and its last modification time. 

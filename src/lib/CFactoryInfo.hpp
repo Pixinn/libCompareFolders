@@ -19,6 +19,10 @@
 #define _SRC_CFactoryInfo_hpp__
 
 #include <memory>
+#include <future>
+#include <thread>
+#include <algorithm>
+#include <vector>
 #include <boost/filesystem.hpp>
 
 
@@ -34,6 +38,8 @@ namespace  cf {
     {
     public:
         virtual ~AFactoryInfo() = default;
+        AFactoryInfo(const AFactoryInfo&) = delete;
+        void operator=(const AFactoryInfo&) = delete;
 
         /// @brief This **static** operation builds a collection from the values stored in a JSON file
         /// @param json_path Pth to the JSON file storing the hashes
@@ -57,13 +63,20 @@ namespace  cf {
     class CFactoryInfoSecure : public AFactoryInfo
     {
     public:
-        CFactoryInfoSecure() = default;
+        explicit CFactoryInfoSecure() :
+            _nbThreads{std::max(1u, std::thread::hardware_concurrency())}
+        {   }
         ~CFactoryInfoSecure() = default;
     
         /// @brief Builds a collection with all the directory's files' hashes
         /// @param root Root folder: all its files will be hashed
         /// @param loggerErr Will log eventual errors
         CCollectionInfo collectInfo(const fs::path& root, ILogError& loggerErr) const override;
+
+    private:
+        /// @brief Splits the paths in vectors (*slices*)
+        std::vector<std::list<fs::path>> splitPaths(const std::list<fs::path>& paths, const unsigned nb_slices) const;
+        const unsigned _nbThreads;
     };
 
     /// @brief      *Quickly* collects info about files.
@@ -72,7 +85,7 @@ namespace  cf {
     class CFactoryInfoFast : public AFactoryInfo
     {
     public:
-        CFactoryInfoFast() = default;
+        explicit CFactoryInfoFast() = default;
         ~CFactoryInfoFast() = default;
 
         /// @brief Builds a collection with all the directory's files' hashes

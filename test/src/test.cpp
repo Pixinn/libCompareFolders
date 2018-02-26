@@ -420,10 +420,16 @@ vector<fs::path> Rename_Files(const fs::path& folder, list<fs::path>& files_iden
 
 
 /// @brief Deletes all the test files
-void CleanUp(const pair<fs::path, fs::path> & paths)
+void CleanUp()
 {
-    fs::remove_all(paths.first);
-    fs::remove_all(paths.second);
+    if (FOLDER_ROOT.empty()) {
+        return;
+    }
+    const auto folder = fs::temp_directory_path() / FOLDER_ROOT;
+    if (!fs::is_directory(folder)) {
+        return;
+    }
+    fs::remove_all(folder);
 }
 
 
@@ -645,9 +651,7 @@ TEST_CASE("JSON")
 
 int main(int argc, char* argv[])
 {
-    CleanUp(Folders);
-    CleanUp(FoldersFast);
-
+    CleanUp();
     srand(static_cast<unsigned>(time(nullptr)));
 
     try {
@@ -658,16 +662,14 @@ int main(int argc, char* argv[])
     catch (const exception& e) {
         cout << e.what() << endl;
         // global clean-up...
-        CleanUp(Folders);
-        CleanUp(FoldersFast);
+        CleanUp();
         return -1;
     }
 
     auto result = Catch::Session().run(argc, argv);
 
     // global clean-up...
-    CleanUp(Folders);
-    CleanUp(FoldersFast);
+    CleanUp();
 
     return result;
 }
