@@ -1,29 +1,48 @@
-#COMPARE_FOLDER
-This program will compare the content of two folders and display:
+# What is it?
 
- - Files that are identical
- - Files that are different
- - Files that have the same content but a different name and/or location
- - Files that are unique
+**CompareFolders** is a **library** which purpose is to scan and compare the content of folders. It can detect:
 
-##Usage
-> compare_folder folder1 folder2
-## How to build
-### Prerequisites
+ - Files that are **identical**
+ - Files that are **different**
+ - Files that have the **same content but a different name and/or location**
+ - Files that are **unique**
 
-*compare_folder* relies on the following **git submodules**
+The project builds the library plus two **applications** using it:
+
+ - **scan_folder** scans the content of a folder and outputs the state of its files into a JSON file.
+ - **compare_folders** compares the content of two folders and outputs a summary on screen or in a JSON file.
+	 - Those folders can be either "real" folders on the disk, or a JSON file resulting from *scan_folder*.
+ 
+# How to build
+## Prerequisites
+### Submodules
+
+*CompareFolders* relies on the following **git submodule**
 
  - cryptopp
 
-Those submodules are locates in the *submodules* folder.
-In order to build *compare_folder* all the submodules have to have been built.
+This submodule is located in the *submodules* folder.
 
-*compare_folder* also relies on **Boost**.
-Export the environment variable **BOOST_DIR** to your local install of boost in order to help cmake find it.
+In order to build *compare_folder* the submodule has to have been built previously.
 
-### CMAKE
-*compare_folder* is built with **cmake**.
-> mkdir *BUILD_DIR* && cd *BUILD_DIR*
+### Boost
+
+*CompareFolders* also relies on **Boost**. Version 1_6_5 is the minimum recommanded version.
+
+You may set the environment variable **BOOST_DIR** to your local install of boost in order to help cmake find it.
+
+### Cmake
+
+The Built system uses *cmake*. Version 3.9 is the minimum recommanded version. If you want to use a newer version of *Boost* than the minimum reommanded, you may have to also use a newer version of *cmake*.
+
+> mkdir [*BUILD_DIR*] && cd [*BUILD_DIR*]
+> 
 > cmake ..
-> make
+> 
+> cmake --build .
 
+# Documentation
+
+The code is commented for **Doxygen** and a *Doxyfile* is provided.
+
+The two provided applications, plus the tests are also good examples.
