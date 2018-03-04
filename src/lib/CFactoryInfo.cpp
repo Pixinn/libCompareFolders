@@ -76,7 +76,7 @@ namespace cf {
             throw ExceptionFatal{ json_path.string() + " is not a file." };
         }
         wifstream streamFile{ json_path.string(), ios_base::in };
-        streamFile.imbue(locale(locale::empty(), new codecvt_utf8<wchar_t>));
+        streamFile.imbue(locale(locale{}, new codecvt_utf8<wchar_t>));
         wstringstream streamStr;
         streamStr << streamFile.rdbuf();
         // Populates the PTree from the stream
@@ -96,7 +96,7 @@ namespace cf {
                 const auto hash = file.second.get_child(JSON_KEYS.CONTENT.HASH).data();
                 const time_t time = std::stoll(file.second.get_child(JSON_KEYS.CONTENT.TIME).data());
                 const auto size = std::stoull(file.second.get_child(JSON_KEYS.CONTENT.SIZE).data());
-                collection.setInfo(fs::path{ file.first }, { codec_utf8.to_bytes(hash) , time });
+                collection.setInfo(fs::path{ file.first }, { codec_utf8.to_bytes(hash) , time, size });
             }
         }
         catch (const pt::ptree_error& e)

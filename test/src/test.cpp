@@ -22,6 +22,8 @@
 #include <array>
 #include <vector>
 #include <string>
+#include <thread>
+#include <chrono>
 
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -320,7 +322,7 @@ vector<fs::path> Modify_Files(const fs::path & folder, list<fs::path>& files_ide
     vector<fs::path> files_modified;
 
     // modify random files
-    const auto nb_files = min(1 + (rand() % (MAX_NB_FILES_TO_MODIFY - 1)), files_identical.size());
+    const auto nb_files = min(size_t{ 1 + (rand() % (MAX_NB_FILES_TO_MODIFY - 1)) }, files_identical.size());
     for (auto i = 0u; i < nb_files; ++i)
     {
         // find the file
@@ -340,6 +342,7 @@ vector<fs::path> Modify_Files(const fs::path & folder, list<fs::path>& files_ide
         buffer[position] = ~buffer[position];
         stream.seekg(0, stream.beg);
         stream.write(buffer.data(), len);
+        stream.flush();
 
         files_identical.erase(it);
 
@@ -524,20 +527,25 @@ TEST_CASE("NOMINAL FAST")
     auto files_identical = Get_Identical_Files(FoldersFast.first);
 
     // Modify some
-    Sleep(1000);
+    this_thread::sleep_for(chrono::seconds{ 1 });
     auto files_modified = Modify_Files(FoldersFast.first, files_identical);
-    Sleep(1000);
+    this_thread::sleep_for(chrono::seconds{ 1 });
     auto files_modified_right = Modify_Files(FoldersFast.second, files_identical);
     files_modified.insert(end(files_modified), begin(files_modified_right), end(files_modified_right));
 
     // Add unique files
-    Sleep(1000);
+    this_thread::sleep_for(chrono::seconds{ 1 });
     auto files_unique_left = Add_Files(FoldersFast.first);
-    Sleep(1000);
+    this_thread::sleep_for(chrono::seconds{ 1 });
     auto files_unique_right = Add_Files(FoldersFast.second);
 
     // Compare
     auto diff = cf::CompareFolders(FoldersFast.first.string(), FoldersFast.second.string(), cf::eCollectingAlgorithm::FAST);
+
+    //cout << "identical: " << diff.identical.size() << " vs " << files_identical.size() << '\n';
+    //cout << "different: " << diff.different.size() << " vs " << files_modified.size() << '\n';
+    //cout << "unique_left: " << diff.unique_left.size() << " vs " << files_unique_left.size() << '\n';
+    //cout << "unique_right: " << diff.unique_right.size() << " vs " << files_unique_right.size() << endl;
 
     // Check results
     REQUIRE(diff.identical.size() == files_identical.size());
