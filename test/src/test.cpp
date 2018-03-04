@@ -17,6 +17,7 @@
 
 #include <cstdlib>
 #include <cstdint>
+#include <ctime>
 #include <stdexcept>
 #include <list>
 #include <array>
@@ -60,16 +61,16 @@ static cf::diff_t Diff;
 list<fs::path> Get_Identical_Files(const fs::path& dir)
 {
     list<fs::path> identical;
-    
+
     fs::recursive_directory_iterator it{ dir };
     fs::recursive_directory_iterator it_end;
-    while (it != it_end) { 
+    while (it != it_end) {
         if (fs::is_regular_file(*it)) {
             identical.push_back(fs::relative(*it, dir));
         }
         ++it;
     }
-    
+
     return identical;
 }
 
@@ -97,7 +98,7 @@ wstring Random_WString(const unsigned length)
     const auto len = (1 + length) & 0xFF;
     constexpr array<wchar_t, 99u> charset = { 	L'0',L'1',L'2',L'3',L'4',L'5',L'6',L'7',L'8',L'9',
                                                 L'a',L'z',L'e',L'r',L't',L'y',L'u',L'i',L'o',L'p',L'q',L's',L'd',L'f',L'g',L'h',L'j',L'k',L'l',L'm',L'w',L'x',L'c',L'v',L'b',L'n',
-                                                L'A',L'Z',L'E',L'R',L'T',L'Y',L'U',L'I',L'O',L'P',L'Q',L'S',L'D',L'F',L'G',L'H',L'J',L'K',L'L',L'M',L'W',L'X',L'C',L'V',L'B',L'N',                                                
+                                                L'A',L'Z',L'E',L'R',L'T',L'Y',L'U',L'I',L'O',L'P',L'Q',L'S',L'D',L'F',L'G',L'H',L'J',L'K',L'L',L'M',L'W',L'X',L'C',L'V',L'B',L'N',
                                                 L'α',L'β',L'γ',L'δ',L'ε',L'ख',L'ग',L'घ',L'ङ',L'च',L'僃',L'僄',L'僅',L'僆',L'僇',L'љ',L'њ',L'ћ',L'ќ',L'ѝ',L'س',L'ڇ',L'ڲ',L'غ',L'؁',
                                                 L'&',L'é',L'²',L'è',L'ç',L'à',L'@',L'$',L'£',L'€',L'☂',L'☣'};
 	const auto size_charset = charset.size();
@@ -225,7 +226,7 @@ bool Copy_Folder(fs::path const & source, fs::path const & destination )
 
 
 /// @brief      Builds a file tree to perform the tests on.
-/// @details    It will be directly used by tests of the *secure* hash. 
+/// @details    It will be directly used by tests of the *secure* hash.
 ///             Tests of the *fast* hash will use some of those files.
 ///             Returns the files that were created
 pair<fs::path, fs::path> Build_Test_Files()
@@ -237,7 +238,7 @@ pair<fs::path, fs::path> Build_Test_Files()
     const auto folder_right = folder_tmp / FOLDER_ROOT / "secure" / "right";
     if (!fs::exists(folder_left) && !fs::create_directories(folder_left)) {
         throw runtime_error{ "Cannot create folder " + folder_left.string() };
-    }    
+    }
 
     const unsigned nb_folders = (rand() % (MAX_NB_FOLDERS -1))+1;
     for (auto i = 0u; i < nb_folders; ++i) {
@@ -249,7 +250,7 @@ pair<fs::path, fs::path> Build_Test_Files()
     Copy_Folder(folder_left, folder_right);
 
     return { folder_left, folder_right };
-    
+
 }
 
 
@@ -342,7 +343,8 @@ vector<fs::path> Modify_Files(const fs::path & folder, list<fs::path>& files_ide
         buffer[position] = ~buffer[position];
         stream.seekg(0, stream.beg);
         stream.write(buffer.data(), len);
-        stream.flush();
+        stream.close();
+        fs::last_write_time({folder / file}, time(nullptr));
 
         files_identical.erase(it);
 
@@ -470,7 +472,7 @@ TEST_CASE("NOMINAL SECURE")
     auto files_modified = Modify_Files(Folders.first, files_identical);
     auto files_modified_right = Modify_Files(Folders.second, files_identical);
     files_modified.insert(end(files_modified), begin(files_modified_right), end(files_modified_right));
-    
+
     // Add unique files
     // NOTE:    There is an **extremely** thin chance that the files added left == the files added right.
     //          Then the test would fail!
@@ -483,38 +485,38 @@ TEST_CASE("NOMINAL SECURE")
     // Compare
     Diff = cf::CompareFolders(Folders.first.string(), Folders.second.string(), cf::eCollectingAlgorithm::SECURE);
 
-
     // Check results
+    // Sizes
     REQUIRE(Diff.identical.size() == files_identical.size());
+    REQUIRE(Diff.different.size() == files_modified.size());
+    REQUIRE(Diff.unique_left.size() == files_unique_left.size());
+    REQUIRE(Diff.unique_right.size() == files_unique_right.size());
+    REQUIRE(Diff.renamed.size() == files_renamed.size());
+    // Content
     for (auto& entry : Diff.identical) {
         REQUIRE(find(begin(files_identical), end(files_identical), entry) != end(files_identical));
     }
-    REQUIRE(Diff.different.size() == files_modified.size());
     for (auto& entry : Diff.different) {
         REQUIRE(find(begin(files_modified), end(files_modified), entry) != end(files_modified));
     }
-    REQUIRE(Diff.unique_left.size() == files_unique_left.size());
     for (auto& entry : Diff.unique_left) {
         if (find(begin(files_unique_left), end(files_unique_left), entry) == end(files_unique_left)) {
             wcout << "NOT FOUND: " << entry;
         }
         REQUIRE(find(begin(files_unique_left), end(files_unique_left), entry) != end(files_unique_left));
     }
-    REQUIRE(Diff.unique_right.size() == files_unique_right.size());
     for (auto& entry : Diff.unique_right) {
         if (find(begin(files_unique_right), end(files_unique_right), entry) == end(files_unique_right)) {
             wcout << "NOT FOUND: " << entry;
         }
         REQUIRE(find(begin(files_unique_right), end(files_unique_right), entry) != end(files_unique_right));
     }
-    REQUIRE(Diff.renamed.size() == files_renamed.size());
     for (auto& entry : Diff.renamed) {
         if (find(begin(files_renamed), end(files_renamed), *begin(entry.left)) == end(files_renamed)) {
             wcout << "NOT FOUND: " << *begin(entry.left);
         }
         REQUIRE(find(begin(files_renamed), end(files_renamed), *begin(entry.left)) != end(files_renamed)); // Works because file were renamed in LEFT and there was no duplication
     }
-   
 }
 
 
@@ -542,25 +544,22 @@ TEST_CASE("NOMINAL FAST")
     // Compare
     auto diff = cf::CompareFolders(FoldersFast.first.string(), FoldersFast.second.string(), cf::eCollectingAlgorithm::FAST);
 
-    //cout << "identical: " << diff.identical.size() << " vs " << files_identical.size() << '\n';
-    //cout << "different: " << diff.different.size() << " vs " << files_modified.size() << '\n';
-    //cout << "unique_left: " << diff.unique_left.size() << " vs " << files_unique_left.size() << '\n';
-    //cout << "unique_right: " << diff.unique_right.size() << " vs " << files_unique_right.size() << endl;
-
     // Check results
+    // Sizes
     REQUIRE(diff.identical.size() == files_identical.size());
+    REQUIRE(diff.different.size() == files_modified.size());
+    REQUIRE(diff.unique_left.size() == files_unique_left.size());
+    REQUIRE(diff.unique_right.size() == files_unique_right.size());
+    // Contents
     for (auto& entry : diff.identical) {
         REQUIRE(find(begin(files_identical), end(files_identical), entry) != end(files_identical));
     }
-    REQUIRE(diff.different.size() == files_modified.size());
     for (auto& entry : diff.different) {
         REQUIRE(find(begin(files_modified), end(files_modified), entry) != end(files_modified));
     }
-    REQUIRE(diff.unique_left.size() == files_unique_left.size());
     for (auto& entry : diff.unique_left) {
         REQUIRE(find(begin(files_unique_left), end(files_unique_left), entry) != end(files_unique_left));
     }
-    REQUIRE(diff.unique_right.size() == files_unique_right.size());
     for (auto& entry : diff.unique_right) {
         REQUIRE(find(begin(files_unique_right), end(files_unique_right), entry) != end(files_unique_right));
     }
@@ -574,9 +573,9 @@ TEST_CASE("JSON")
     const fs::path path_json_left{ fs::temp_directory_path() / "compare_folder_left.json" };
     const fs::path path_json_right{ fs::temp_directory_path() / "compare_folder_right.json" };
     const fs::path path_json_right_fast{ fs::temp_directory_path() / "compare_folder_right_fast.json" };
-    
+
 	{
-		// Save folder 1 as a JSON file    
+		// Save folder 1 as a JSON file
 		std::ofstream stream_json_left{ path_json_left.string(), ios::out };
 		if (!stream_json_left) {
 			throw(runtime_error{ "Cannot create " + path_json_left.string() + " required to complete the test." });
@@ -584,7 +583,7 @@ TEST_CASE("JSON")
 		auto json_left = cf::ScanFolder(Folders.first.string(), cf::eCollectingAlgorithm::SECURE);
 		cf::WriteWString(stream_json_left, json_left);
 		stream_json_left.close();
-		// Save folder 2 as a JSON file    
+		// Save folder 2 as a JSON file
 		std::ofstream stream_json_right{ path_json_right.string(), ios::out };
 		if (!stream_json_right) {
 			throw(runtime_error{ "Cannot create " + path_json_right.string() + " required to complete the test." });
@@ -621,7 +620,7 @@ TEST_CASE("JSON")
 
         REQUIRE(exception == true);
     }
-	
+
 
 	{
 		// Corrupt the json file
