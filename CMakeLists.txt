@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.9 FATAL_ERROR) #3.9 required to find boost 1.65
 
 project(compare_folders VERSION 0.1 LANGUAGES CXX)
 
-### FIND THE LIBRARIES 
+### FIND THE LIBRARIES
 
 # threads
 find_package (Threads REQUIRED)
@@ -50,7 +50,7 @@ add_executable(${APP_SCANFOLDER_NAME}      ${SRC_DIR_APPS}/${APP_SCANFOLDER_NAME
 # common
 set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 set(COMPILE_OPTIONS_MSVC "/W4" "/MP" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
-set(COMPILE_OPTIONS_UNIX "-std=c++11" "-Wall"  "$<$<CONFIG:Release>:-Werror>")
+set(COMPILE_OPTIONS_UNIX "-std=c++11" "-Wall"  "$<$<CONFIG:Release>:-Werror>" "-Wno-missing-braces") #"missing-braces" only emitted by Xcode (deprecated in GCC)
 
 # library
 target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
@@ -122,5 +122,3 @@ target_link_libraries(${APP_SCANFOLDER_NAME} ${LIB_NAME} ${CMAKE_THREAD_LIBS_INI
 ### TEST
 enable_testing()
 add_subdirectory(test)
-
-
