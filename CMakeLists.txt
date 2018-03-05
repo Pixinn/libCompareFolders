@@ -2,7 +2,7 @@
 #           https://rix0r.nl/blog/2015/08/13/cmake-guide/
 
 cmake_minimum_required(VERSION 3.9 FATAL_ERROR) #3.9 required to find boost 1.65
-
+ 
 
 project(compare_folders VERSION 0.1 LANGUAGES CXX)
 
@@ -14,7 +14,7 @@ find_package (Threads REQUIRED)
 set(BOOST_ROOT $ENV{BOOST_DIR})
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
-find_package(Boost 1.65.0 COMPONENTS filesystem REQUIRED)
+find_package(Boost 1.65.0 COMPONENTS filesystem system REQUIRED)
 if(NOT Boost_FOUND)
 	message(FATAL_ERROR "\nBoost is mandatory.\nTry to export the root directory of your Boost installation as \"BOOST_DIR\".")
 endif()

@@ -256,9 +256,9 @@ pair<fs::path, fs::path> Build_Test_Files()
 
 /// @brief      Builds a file tree to perform the tests of the *fast* hash  on.
 /// @details    Returns the files that were created
-/// @param      nb_files Number of *base* files to run the test on
+/// @param      nb_files Number of *base* files to run the test on if enough are available
 /// @param      dir_source Files to use as a source for the *test files*
-pair<fs::path, fs::path> Build_Test_Fast_Files(const unsigned nb_files, const fs::path& dir_source)
+pair<fs::path, fs::path> Build_Test_Fast_Files(unsigned nb_files, const fs::path& dir_source)
 {
     // create test dirs
     const auto folder_tmp = fs::temp_directory_path();
@@ -278,9 +278,7 @@ pair<fs::path, fs::path> Build_Test_Fast_Files(const unsigned nb_files, const fs
         }
         ++file;
     }
-    if (files.size() < nb_files) {
-        throw std::runtime_error{ "Bad luck error width randomness: Not enough files were generated. Try again." };
-    }
+    nb_files = min(static_cast<unsigned>(files.size()), nb_files);
     // copy random files in test dir
     class CInfo {
     public:
@@ -293,6 +291,9 @@ pair<fs::path, fs::path> Build_Test_Fast_Files(const unsigned nb_files, const fs
         time_t last_modification;
         uintmax_t size;
     };
+
+    // TODO File creation should begin at the start of a second and be completed within 1s!
+
     list<fs::path> files_ok;
     vector<CInfo> infos;
     for (auto i = 0u; i < nb_files; ++i)
@@ -529,16 +530,13 @@ TEST_CASE("NOMINAL FAST")
     auto files_identical = Get_Identical_Files(FoldersFast.first);
 
     // Modify some
-    this_thread::sleep_for(chrono::seconds{ 1 });
+    this_thread::sleep_for(chrono::seconds{ 2 });
     auto files_modified = Modify_Files(FoldersFast.first, files_identical);
-    this_thread::sleep_for(chrono::seconds{ 1 });
     auto files_modified_right = Modify_Files(FoldersFast.second, files_identical);
     files_modified.insert(end(files_modified), begin(files_modified_right), end(files_modified_right));
 
     // Add unique files
-    this_thread::sleep_for(chrono::seconds{ 1 });
     auto files_unique_left = Add_Files(FoldersFast.first);
-    this_thread::sleep_for(chrono::seconds{ 1 });
     auto files_unique_right = Add_Files(FoldersFast.second);
 
     // Compare
