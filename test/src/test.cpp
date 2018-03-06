@@ -131,7 +131,7 @@ fs::path Create_Random_Folder(const fs::path parent)
 vector<fs::path> Create_Random_Files(const fs::path folder, const uint8_t max_nb_files = MAX_NB_FILES_PER_FOLDER)
 {
     vector<fs::path> paths;
-    constexpr uint8_t max_len_filename = 20u;
+    constexpr uint8_t max_len_filename = 50u;
 
     const auto parent = folder.parent_path();
 
@@ -254,6 +254,20 @@ pair<fs::path, fs::path> Build_Test_Files()
 }
 
 
+
+/// @brief Waits until the start of next second
+/// @details Sleeps then pools
+void Wait_For_Next_Second()
+{
+    constexpr auto STEP = chrono::milliseconds{ 100 };
+    const auto start = chrono::steady_clock::now();
+    do {
+        this_thread::sleep_for(STEP);
+    }
+    while(chrono::steady_clock::now() - start < chrono::seconds{1} );
+}
+
+
 /// @brief      Builds a file tree to perform the tests of the *fast* hash  on.
 /// @details    Returns the files that were created
 /// @param      nb_files Number of *base* files to run the test on if enough are available
@@ -282,35 +296,39 @@ pair<fs::path, fs::path> Build_Test_Fast_Files(unsigned nb_files, const fs::path
     // copy random files in test dir
     class CInfo {
     public:
-        CInfo(const time_t mod, const uintmax_t sz) :
-            last_modification{ mod }, size{ sz }
+        CInfo(const time_t mod, const uintmax_t sz, const fs::path& p_path) :
+            last_modification{ mod }, size{ sz }, path{ p_path }
         {   }
         inline bool operator==(const CInfo& rhs) {
-            return rhs.last_modification == last_modification && rhs.size == size;
+            return  rhs.last_modification == last_modification && rhs.size == size;
         }
         time_t last_modification;
         uintmax_t size;
+        fs::path path;
     };
 
-    // TODO File creation should begin at the start of a second and be completed within 1s!
 
-    list<fs::path> files_ok;
+    // Selecting the files to test: they should have a unique size / time combination so their "fast hash" is unique
     vector<CInfo> infos;
     for (auto i = 0u; i < nb_files; ++i)
     {
         const auto idx = rand() % files.size();
         const auto path = files[idx];
-        const CInfo info{ fs::last_write_time(path), fs::file_size(path) };
+        const CInfo info{ fs::last_write_time(path), fs::file_size(path), path };
         if (find(begin(infos), end(infos), info) == end(infos)) { // suitable file : no other with the exact same size and date
             infos.push_back(info);
-            fs::copy_file(
-                path,
-                folder_left / path.filename()
-            );
         }
     }
-
+    
+    // Creating the left and right folder
+    // In order for those file to have the same "last write time",
+    // their creation shall begin at the start of a second and be completed before the start of the following one!
+    Wait_For_Next_Second();
+    for(const auto info : infos) {
+        fs::copy_file(info.path, folder_left / info.path.filename() );
+    }
     Copy_Folder(folder_left, folder_right);
+
 
     return { folder_left, folder_right };
 
@@ -410,9 +428,9 @@ vector<fs::path> Rename_Files(const fs::path& folder, list<fs::path>& files_iden
         files_identical.erase(it);
         const auto parent = path_file.parent_path();
         const auto filename_old = path_file.filename();
-        auto filename_new = Random_WString(20u);
+        auto filename_new = Random_WString(50u);
         while (filename_new == filename_old.wstring()) {
-            filename_new = Random_WString(20u);
+            filename_new = Random_WString(50u);
         }
         const auto path_new = parent / filename_new;
         fs::rename(path_file, path_new);
@@ -522,15 +540,13 @@ TEST_CASE("NOMINAL SECURE")
 
 
 
-
-
 TEST_CASE("NOMINAL FAST")
 {
     // Get the identical files list
     auto files_identical = Get_Identical_Files(FoldersFast.first);
 
     // Modify some
-    this_thread::sleep_for(chrono::seconds{ 2 });
+    this_thread::sleep_for(chrono::seconds{1}); //to chage their "last write time"
     auto files_modified = Modify_Files(FoldersFast.first, files_identical);
     auto files_modified_right = Modify_Files(FoldersFast.second, files_identical);
     files_modified.insert(end(files_modified), begin(files_modified_right), end(files_modified_right));
