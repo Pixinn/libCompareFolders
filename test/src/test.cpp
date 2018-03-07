@@ -259,12 +259,16 @@ pair<fs::path, fs::path> Build_Test_Files()
 /// @details Sleeps then pools
 void Wait_For_Next_Second()
 {
-    constexpr auto STEP = chrono::milliseconds{ 100 };
-    const auto start = chrono::steady_clock::now();
+    constexpr auto STEP = chrono::milliseconds{ 50 };
+    auto dbg = chrono::steady_clock::now();
+    const chrono::seconds start = chrono::time_point_cast<chrono::seconds>(dbg).time_since_epoch();
+    chrono::seconds now;
+    //cout << "START: " << start.count() << '\n';
     do {
         this_thread::sleep_for(STEP);
+        now = chrono::time_point_cast<chrono::seconds>(chrono::steady_clock::now()).time_since_epoch();
     }
-    while(chrono::steady_clock::now() - start < chrono::seconds{1} );
+    while(now < start + chrono::seconds{1} );
 }
 
 
