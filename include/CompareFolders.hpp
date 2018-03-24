@@ -25,34 +25,65 @@
 
 namespace cf
 {
-    /// @brief Description of the keys used in JSON files
-    static const struct  {
-        const std::wstring GENERATOR{ L"Generator" };                 ///< Program used to generate the JSON file
-        const std::wstring ROOT{ L"root" };                           ///< Root folder
-        const std::wstring ALGO_HASH{ L"hash" };                      ///< Algorithm used to compute hashes
-        const struct  {
-            const std::wstring IDENTICAL{ L"identical" };             ///< Identical files
-            const std::wstring DIFFERENT{ L"different" };             ///< Different files
-            const std::wstring UNIQUE_LEFT{ L"unique left" };         ///< Files that are unique to the left
-            const std::wstring UNIQUE_RIGHT{ L"unique right" };       ///< Files that are unique to the right
-            const std::wstring RENAMED{ L"renamed and duplicates" };  ///< Files that are identical but where renamed, moved or duplicated
-            const std::wstring LEFT{ L"left" };
-            const std::wstring RIGHT{ L"right" };
-        } DIFF;                                                       ///< Differences betwwen two folders
-        const struct {
-            const std::wstring FILES{ L"files" };                     ///< Files inside a folder
-            const std::wstring HASH{ L"hash" };                       ///< Hash of a file's conte,t
-            const std::wstring TIME{ L"last_modified" };              ///< Time of file's last modification
-            const std::wstring SIZE{ L"size" };                       ///< Size of the file
-        } CONTENT;                                                    ///< Description of a filder's content
-    } JSON_KEYS;
+      /// @brief Description of the keys used in JSON files
+     typedef struct {
+         /// @brief Differences betwwen two folders
+         typedef struct {
+             std::wstring IDENTICAL;///< Identical files
+             std::wstring DIFFERENT;///< Different files
+             std::wstring UNIQUE_LEFT;///< Files that are unique to the left
+             std::wstring UNIQUE_RIGHT;///< Files that are unique to the right
+             std::wstring RENAMED;///< Files that are identical but where renamed, moved or duplicated
+             std::wstring LEFT;
+             std::wstring RIGHT;
+         } DIFF_t;
+         /// @brief Description of a folder's content
+         typedef struct {
+             std::wstring FILES;//< Files inside a folder
+             std::wstring HASH;///< Hash of a file's content
+             std::wstring TIME;///< Time of file's last modification
+             std::wstring SIZE;///< Size of the file
+         } CONTENT_t;
+         std::wstring GENERATOR; ///< Program used to generate the JSON file
+         std::wstring ROOT;///< Root folder
+         std::wstring ALGO_HASH;///< Algorithm used to compute hashes
+         DIFF_t DIFF;
+         CONTENT_t CONTENT;
+     } JSON_KEYS_t;
 
-    /// @brief Description of the const values that pmay be used in JSON files
-    static const struct {
-        const std::wstring GENERATOR{ L"info.xtof.COMPARE_FOLDERS" };
-        const std::wstring ALGO_HASH_FAST{ L"fast" };
-        const std::wstring ALGO_HASH_SECURE{ L"secure" };
-    } JSON_CONST_VALUES;
+     /// @brief Description of the const values that may be used in JSON files
+     typedef struct {
+         std::wstring GENERATOR;
+         std::wstring ALGO_HASH_FAST;
+         std::wstring ALGO_HASH_SECURE;
+     } JSON_CONST_VALUES_t;
+
+     static const JSON_KEYS_t JSON_KEYS {
+         L"Generator",                   // GENERATOR
+         L"root",                        // ROOT
+         L"hash",                        // ALGO_HASH
+         {   // DIFF
+             L"identical",               // IDENTICAL
+             L"different",               // DIFFERENT
+             L"unique left",             // UNIQUE_LEFT
+             L"unique right",            // UNIQUE_RIGHT
+             L"renamed and duplicates",  // RENAMED
+             L"left",                    // LEFT
+             L"right"                    // RIGHT
+         },
+         {   // CONTENT
+             L"files",                   // FILES
+             L"hash",                    // HASH
+             L"last_modified",           // TIME
+             L"size"                     // SIZE
+         }
+     };
+
+     static const JSON_CONST_VALUES_t JSON_CONST_VALUES {
+         L"info.xtof.COMPARE_FOLDERS",   // GENERATOR
+         L"fast",                        // ALGO_HASH_FAST
+         L"secure"                       // ALGO_HASH_SECURE
+     };
 
     /// @brief A fatal error occured
     class ExceptionFatal : public std::runtime_error
@@ -76,7 +107,7 @@ namespace cf
     /// @brief Interface for an error logger
     class ILogError
     {
-    public: 
+    public:
         ILogError() = default;
         virtual ~ILogError() = default;
         /// @brief Logs the provided error message
@@ -100,7 +131,7 @@ namespace cf
     typedef struct json_t {
         explicit json_t(const std::string& p_path) :
             path{ p_path }
-        {     }        
+        {     }
         const std::string path;
     } json_t;
 
@@ -110,7 +141,7 @@ namespace cf
     {
         /// @brief Custom operator== as std::list does not provide any
         bool operator==(const diff_t& rhs) const noexcept;
-       
+
         /// @brief Files with different path but the very same content.
         /// Those files can have **duplicates** both left and right
         typedef struct renamed_t
@@ -173,7 +204,7 @@ namespace cf
     /// @param method        Algorithm used to collect info about the files
     /// @param logErrors     Error logger
     std::wstring ScanFolder(const std::string& path, const eHashingAlgorithm algo,  ILogError& logErrors = SLogErrorNull::GetInstance());
-	
+
 	/// @brief 	Creates a new file containing an UTF-8 representation of the provided wstring
 	/// @details The resulting file will be UTF-8 which *may* be headed by a **BOM**
 	/// @param stream 	Stream handling the file to create
