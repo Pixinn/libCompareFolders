@@ -27,13 +27,13 @@ In order to build *compare_folder* the submodule has to have been built previous
 
 ### Boost
 
-*CompareFolders* also relies on **Boost**. Version 1_6_5 is the minimum recommanded version.
+*CompareFolders* also relies on **Boost**. Version 1_6_5 is the minimum recommended version.
 
 You may set the environment variable **BOOST_DIR** to your local install of boost in order to help cmake find it.
 
 ### Cmake
 
-The Built system uses *cmake*. Version 3.9 is the minimum recommanded version. If you want to use a newer version of *Boost* than the minimum reommanded, you may have to also use a newer version of *cmake*.
+The Built system uses *cmake*. Version 3.9 is the minimum recommended version. If you want to use a newer version of *Boost* than the minimum recommended, you may have to also use a newer version of *cmake*.
 
 > mkdir [*BUILD_DIR*] && cd [*BUILD_DIR*]
 > 
