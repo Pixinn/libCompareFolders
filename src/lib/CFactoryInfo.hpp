@@ -94,7 +94,7 @@ namespace  cf {
         CCollectionInfo collectInfo(const fs::path& root, ILogError& loggerErr) const override;
 
     private:
-        /// @brief Computes and returns the "*fast hash*" from the info provided
+        /// @brief Computes and returns the *fast hash* from the info provided
         std::string hasherFast(const std::time_t time_modified, const std::uintmax_t size) const;
     };
     
