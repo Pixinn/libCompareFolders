@@ -229,13 +229,9 @@ namespace cf {
     }
 
 
+    /// @Detailed The resulting *hash* is a concatenation of the file's **last modification time** and **size**.
     string CFactoryInfoFast::hasherFast(const std::time_t time_modified, const std::uintmax_t size) const
     {
-        // Time to string
-        //constexpr unsigned MAX_SIZE_TIME = 32u;
-        //char str_time[MAX_SIZE_TIME];
-        //const auto time = localtime(&time_modified);
-        //strftime(str_time, MAX_SIZE_TIME,"", time);
         stringstream stream;
         stream << std::uppercase << std::hex << time_modified << std::uppercase << std::hex << size;
         return stream.str();

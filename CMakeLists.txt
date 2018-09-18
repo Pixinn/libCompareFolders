@@ -2,11 +2,21 @@
 #           https://rix0r.nl/blog/2015/08/13/cmake-guide/
 
 cmake_minimum_required(VERSION 3.9 FATAL_ERROR) #3.9 required to find boost 1.65
- 
 
 project(compare_folders VERSION 0.1 LANGUAGES CXX)
 
 ### FIND THE LIBRARIES
+# Win32 only: Where to install and search for packages. Would default to "Program Files"
+if(CMAKE_SYSTEM MATCHES "Windows") 
+	if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+		if("$ENV{CMAKE_PACKAGES_DIR}" STREQUAL "")
+			message(FATAL_ERROR "\n!!!!!!!!! FATAL ERROR !!!!!!!!!\nPlease define CMAKE_INSTALL_PREFIX or set a CMAKE_PACKAGES_DIR environment variable.\nDelete CMakeCache.txt then proceed.\n!!!!!!!!!")
+		else()
+            set(CMAKE_INSTALL_PREFIX $ENV{CMAKE_PACKAGES_DIR} CACHE PATH "..." FORCE)             
+		endif()
+  endif()
+  set(CMAKE_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
+endif(CMAKE_SYSTEM MATCHES "Windows")
 
 # threads
 find_package (Threads REQUIRED)
@@ -19,8 +29,7 @@ if(NOT Boost_FOUND)
 	message(FATAL_ERROR "\nBoost is mandatory.\nTry to export the root directory of your Boost installation as \"BOOST_DIR\".")
 endif()
 # cryptopp
-set(CRYTOPP_LIB_DIR ${CMAKE_SOURCE_DIR}/submodules/cryptopp)
-
+find_package(cryptopp 6.1.0 REQUIRED)
 
 ### SOURCES
 
@@ -106,14 +115,7 @@ target_include_directories(${APP_SCANFOLDER_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
 ### LINK
 
 # library
-target_link_libraries(${LIB_NAME} ${Boost_LIBRARIES})
-if(MSVC)
-    target_link_libraries(${LIB_NAME}
-                            debug       ${CRYTOPP_LIB_DIR}/Win32/Output/Debug/cryptlib.lib
-                            optimized   ${CRYTOPP_LIB_DIR}/Win32/Output/Release/cryptlib.lib)
-else()
-    target_link_libraries(${LIB_NAME} ${CRYTOPP_LIB_DIR}/libcryptopp.a)
-endif()
+target_link_libraries(${LIB_NAME} ${Boost_LIBRARIES} cryptopp-static)
 
 # applications
 target_link_libraries(${APP_COMPAREFOLDERS_NAME} ${LIB_NAME} ${CMAKE_THREAD_LIBS_INIT})
