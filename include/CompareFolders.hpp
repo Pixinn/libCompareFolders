@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <list>
 #include <string>
+#include <memory>
 
 namespace cf
 {
@@ -104,26 +105,22 @@ namespace cf
     };
 
 
-    /// @brief Interface for an error logger
+    /// @brief Interface for an error logger. The public operations **shall be callable from multiple concurrent threads**
     class ILogError
     {
     public:
         ILogError() = default;
         virtual ~ILogError() = default;
         /// @brief Logs the provided error message
+        /// @detail The implementations of this operation shall be callable from concurrent threads.
         virtual void log(const std::string& message) = 0;
     };
 
     /// @brief Null error logger (Singleton)
-    class SLogErrorNull : public ILogError
+    class CLogErrorNull : public ILogError
     {
     public:
         void log(const std::string&) override { }
-        static SLogErrorNull& GetInstance() {
-            return _Instance;
-        }
-    private:
-        static SLogErrorNull _Instance;
     };
 
     /// @brief JSON file
@@ -173,10 +170,11 @@ namespace cf
     /// @brief Compares the content of two folders
     /// @param left First folder's path
     /// @param right Second folder's path
-    /// @param logErrors A logger to catch minor errors that could happen. By default, the NULL logger will ignore them.
+    /// @param logErrors A logger to catch minor errors that could happen.The function will handle its lifetime.
     /// @details Returns the differences between the two folders.
     ///          Identical files but with a different names are also detected.
-    diff_t CompareFolders(const std::string& left, const std::string& right, const eHashingAlgorithm algo, ILogError& logErrors = SLogErrorNull::GetInstance());
+    ///          A null logger is provided by default
+    diff_t CompareFolders(const std::string& left, const std::string& right, const eHashingAlgorithm algo, std::unique_ptr<ILogError> logger = std::make_unique< CLogErrorNull>());
 
     /// @brief Compares the content of two JSON files
     /// @param left First JSON file
@@ -189,11 +187,12 @@ namespace cf
     /// @brief Compares the content of two JSON files
     /// @param folder The folder path
     /// @param json The JSON file
-    /// @param logErrors A logger to catch minor errors that could happen. By default, the NULL logger will ignore them.
+    /// @param logErrors A logger to catch minor errors that could happen. The function will handle its lifetime.
     /// @details Returns the differences between the content described by the JSON files.
     ///          Identical files but with a different names are also detected.
 	///			 **Please note** that a json file in UTF-8 **with BOM** won't be correctly parsed!!
-    diff_t CompareFolders(const std::string& folder, const json_t json, ILogError& logErrors = SLogErrorNull::GetInstance());
+    ///          A null logger is provided by default
+    diff_t CompareFolders(const std::string& folder, const json_t json, std::unique_ptr<ILogError> logger = std::make_unique< CLogErrorNull>());
 
     /// @brief Produces a JSON wstring with the difference between two folders
     /// @param diff Difference between two folders
@@ -202,8 +201,9 @@ namespace cf
     /// @brief Analyzes the content of a folder and returns a JSON string
     /// @param path          Path of the folder to be analyzed
     /// @param method        Algorithm used to collect info about the files
-    /// @param logErrors     Error logger
-    std::wstring ScanFolder(const std::string& path, const eHashingAlgorithm algo,  ILogError& logErrors = SLogErrorNull::GetInstance());
+    /// @param logErrors     Error logger. The function will handle its lifetime.
+    /// @details             A null logger is provided by default
+    std::wstring ScanFolder(const std::string& path, const eHashingAlgorithm algo, std::unique_ptr<ILogError> logger = std::make_unique< CLogErrorNull>());
 
 	/// @brief 	Creates a new file containing an UTF-8 representation of the provided wstring
 	/// @details The resulting file will be UTF-8 which *may* be headed by a **BOM**

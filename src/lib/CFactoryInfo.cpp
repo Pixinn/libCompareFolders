@@ -116,7 +116,7 @@ namespace cf {
     /// @detailed   All hashes are computed using a cryptographic hasher. 
     ///             Collecting info can take some time. Thus, an external error logger must be provided
     ///             to give the opportunity to report the errors in real time.
-    CCollectionInfo CFactoryInfoSecure::collectInfo(const fs::path& root, ILogError&) const
+    CCollectionInfo CFactoryInfoSecure::collectInfo(const fs::path& root)
     {
         // split work for tasks
         const auto paths_files = listFiles(root);
@@ -202,14 +202,14 @@ namespace cf {
     ///             Thus, the time consuming *secure* hash is only computed for those duplicates.
     ///             Collecting info can take some time. Thus, an external error logger must be provided
     ///             to give the opportunity to report the errors in real time.
-    CCollectionInfo CFactoryInfoFast::collectInfo(const fs::path& root, ILogError& logger) const
+    CCollectionInfo CFactoryInfoFast::collectInfo(const fs::path& root)
     {
        
         CCollectionInfo collection_info{ root,  eCollectingAlgorithm::FAST};
-        try
+        const auto paths = listFiles(root);
+        for (const auto& path : paths)
         {
-            const auto paths = listFiles(root);
-            for (const auto& path : paths)
+            try
             {
                 const auto path_relative = fs::relative(path, root);
                 const auto time_modified = fs::last_write_time(path);
@@ -218,11 +218,10 @@ namespace cf {
 
                 collection_info.setInfo(path_relative, { hash, time_modified, size });
             }
-        }
-        catch (const fs::filesystem_error& e) {
-            const string message = string{ "Filesystem error: " } +e.what();
-            logger.log(message);
-            throw; // TODO handle and don't rethrow
+            catch (const fs::filesystem_error& e) {
+                const string message = string{ "Filesystem error: " } +e.what();
+                _logger.error(message);
+            }
         }
 
         return collection_info;

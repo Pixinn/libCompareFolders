@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
     try {
         
         LogError logErr;
-        const auto json = cf::ScanFolder(path_folder, algo, logErr);
+        const auto json = cf::ScanFolder(path_folder, algo, make_unique< LogError>());
         ofstream stream{ path_output , ios::out };
         if (!stream) {
             throw runtime_error{ "Cannot write to " + path_output };

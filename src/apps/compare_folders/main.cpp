@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
             if (!path_output.empty()) {
                 cout << "\nCOMPARING\n\n" << '\"' << path_folders[0] << "\"\n\tand\n\"" << path_folders[1] << "\"\n" << endl;
             }
-            result = cf::Json(cf::CompareFolders(path_folders[0], path_folders[1], algo, logErr));
+            result = cf::Json(cf::CompareFolders(path_folders[0], path_folders[1], algo, make_unique< LogError>()));
         }
         // Compare one folder and one JSON file
         else if (path_folders.size() == 1)
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
             if (!path_output.empty()) {
                 cout << "\nCOMPARING\n\n" << '\"' << path_folders[0] << "\"\n\tand\n\"" << path_json[0] << "\"\n" << endl;
             }
-            result = cf::Json(cf::CompareFolders(path_folders[0], cf::json_t{path_json [0]}, logErr));
+            result = cf::Json(cf::CompareFolders(path_folders[0], cf::json_t{path_json [0]}, make_unique< LogError>()));
         }
         // Compare two JSON files
         else

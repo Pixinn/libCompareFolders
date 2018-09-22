@@ -44,7 +44,10 @@ add_library(${LIB_NAME} ${SRC_DIR_LIB}/CCollectionInfo.hpp
                         ${SRC_DIR_LIB}/CFactoryInfo.cpp
 						${SRC_DIR_LIB}/CompareFolders.cpp
                         ${SRC_DIR_LIB}/Utilities.cpp
-                        ${INCLUDE_DIR}/CompareFolders.hpp)
+						${SRC_DIR_LIB}/TDequeConcurrent.hpp
+						${SRC_DIR_LIB}/CLoggerConcurrent.hpp
+                        ${INCLUDE_DIR}/CompareFolders.hpp
+)
 
 # applications
 set(APP_COMPAREFOLDERS_NAME "compare_folders")
@@ -57,9 +60,9 @@ add_executable(${APP_SCANFOLDER_NAME}      ${SRC_DIR_APPS}/${APP_SCANFOLDER_NAME
 ### COMPILER OPTIONS
 
 # common
-set_property(GLOBAL PROPERTY CXX_STANDARD 11)
+set_property(GLOBAL PROPERTY CXX_STANDARD 14)
 set(COMPILE_OPTIONS_MSVC "/W4" "/MP" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
-set(COMPILE_OPTIONS_UNIX "-std=c++11" "-Wall"  "$<$<CONFIG:Release>:-Werror>" "-Wno-missing-braces") #"missing-braces" only emitted by Xcode (deprecated in GCC)
+set(COMPILE_OPTIONS_UNIX "-std=c++14" "-Wall"  "$<$<CONFIG:Release>:-Werror>" "-Wno-missing-braces") #"missing-braces" only emitted by Xcode (deprecated in GCC)
 
 # library
 target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
