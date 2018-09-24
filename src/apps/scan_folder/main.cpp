@@ -30,12 +30,13 @@
 using namespace std;
 
 /// @Brief custom error "live" logger
-class LogError : public cf::ILogError
+class LogError : public cf::ILogger
 {
 public:
-    void log(const string& err) override {
+    void error(const string& err) override {
         cerr << "ARRRRG! " << err << endl;
     }
+    void message(const string&) override {}
 };
 
 

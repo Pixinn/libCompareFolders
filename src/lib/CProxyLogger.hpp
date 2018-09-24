@@ -14,7 +14,7 @@ namespace cf {
     {
     public:
         /// @details Takes exclusive ownership of loggers
-        CProxyLogger(std::unique_ptr<ILogError> loggers) :
+        CProxyLogger(std::unique_ptr<ILogger> loggers) :
             _ptr_loggers{ std::move(loggers) }
         {
             _task_messages.detach();
@@ -34,7 +34,7 @@ namespace cf {
     private:
         TDequeConcurrent<std::string> _queue_messages;  ///< thread safe dequeue used to pile messages to be sent
         TDequeConcurrent<std::string> _queue_errors;    ///< thread safe dequeue used to pile  errors to be sent
-        std::unique_ptr<ILogError> _ptr_loggers;
+        std::unique_ptr<ILogger> _ptr_loggers;
         std::mutex _mutex_logger;                       ///< the logger may be called from two threads: it needs to be guarded
         
 
@@ -45,7 +45,7 @@ namespace cf {
                 auto message = this->_queue_messages.pop_front(); //blocks until a message is in the list
                 {
                     std::lock_guard<std::mutex>{this->_mutex_logger};
-                    _ptr_loggers->log(message);
+                    _ptr_loggers->message(message);
                 }
             }
         } };
@@ -56,7 +56,7 @@ namespace cf {
                 auto message = this->_queue_errors.pop_front(); //blocks until a message is in the list
                 {
                     std::lock_guard<std::mutex>{this->_mutex_logger};
-                    _ptr_loggers->log(message);
+                    _ptr_loggers->error(message);
                 }
             }
         } };

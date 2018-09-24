@@ -105,22 +105,26 @@ namespace cf
     };
 
 
-    /// @brief Interface for an error logger. The public operations **shall be callable from multiple concurrent threads**
-    class ILogError
+    /// @brief Interface for a logger. The public operations **shall be callable from multiple concurrent threads**
+    class ILogger
     {
     public:
-        ILogError() = default;
-        virtual ~ILogError() = default;
-        /// @brief Logs the provided error message
+        ILogger() = default;
+        virtual ~ILogger() = default;
+        /// @brief Logs the provided error
         /// @detail The implementations of this operation shall be callable from concurrent threads.
-        virtual void log(const std::string& message) = 0;
+        virtual void error(const std::string& message) = 0;
+        /// @brief Logs the provided message
+        /// @detail The implementations of this operation shall be callable from concurrent threads.
+        virtual void message(const std::string& message) = 0;
     };
 
     /// @brief Null error logger (Singleton)
-    class CLogErrorNull : public ILogError
+    class CLoggerNull : public ILogger
     {
     public:
-        void log(const std::string&) override { }
+        void error(const std::string&) override { }
+        void message(const std::string&) override { }
     };
 
     /// @brief JSON file
@@ -174,7 +178,7 @@ namespace cf
     /// @details Returns the differences between the two folders.
     ///          Identical files but with a different names are also detected.
     ///          A null logger is provided by default
-    diff_t CompareFolders(const std::string& left, const std::string& right, const eHashingAlgorithm algo, std::unique_ptr<ILogError> logger = std::make_unique< CLogErrorNull>());
+    diff_t CompareFolders(const std::string& left, const std::string& right, const eHashingAlgorithm algo, std::unique_ptr<ILogger> logger = std::make_unique< CLoggerNull>());
 
     /// @brief Compares the content of two JSON files
     /// @param left First JSON file
@@ -192,7 +196,7 @@ namespace cf
     ///          Identical files but with a different names are also detected.
 	///			 **Please note** that a json file in UTF-8 **with BOM** won't be correctly parsed!!
     ///          A null logger is provided by default
-    diff_t CompareFolders(const std::string& folder, const json_t json, std::unique_ptr<ILogError> logger = std::make_unique< CLogErrorNull>());
+    diff_t CompareFolders(const std::string& folder, const json_t json, std::unique_ptr<ILogger> logger = std::make_unique< CLoggerNull>());
 
     /// @brief Produces a JSON wstring with the difference between two folders
     /// @param diff Difference between two folders
@@ -203,7 +207,7 @@ namespace cf
     /// @param method        Algorithm used to collect info about the files
     /// @param logErrors     Error logger. The function will handle its lifetime.
     /// @details             A null logger is provided by default
-    std::wstring ScanFolder(const std::string& path, const eHashingAlgorithm algo, std::unique_ptr<ILogError> logger = std::make_unique< CLogErrorNull>());
+    std::wstring ScanFolder(const std::string& path, const eHashingAlgorithm algo, std::unique_ptr<ILogger> logger = std::make_unique< CLoggerNull>());
 
 	/// @brief 	Creates a new file containing an UTF-8 representation of the provided wstring
 	/// @details The resulting file will be UTF-8 which *may* be headed by a **BOM**

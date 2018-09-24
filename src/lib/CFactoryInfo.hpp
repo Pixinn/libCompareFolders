@@ -52,7 +52,7 @@ namespace  cf {
         virtual CCollectionInfo collectInfo(const fs::path& root) = 0;
 
     protected:
-        AFactoryInfo(std::unique_ptr<ILogError> logger) :
+        AFactoryInfo(std::unique_ptr<ILogger> logger) :
             _logger{ std::move(logger) }
         {   }
 
@@ -69,7 +69,7 @@ namespace  cf {
     class CFactoryInfoSecure : public AFactoryInfo
     {
     public:
-        explicit CFactoryInfoSecure(std::unique_ptr<ILogError> logger) :
+        explicit CFactoryInfoSecure(std::unique_ptr<ILogger> logger) :
             AFactoryInfo{std::move(logger)},
             _nbThreads{std::max(1u, std::thread::hardware_concurrency())}
         {   }
@@ -92,7 +92,7 @@ namespace  cf {
     class CFactoryInfoFast : public AFactoryInfo
     {
     public:
-        explicit CFactoryInfoFast(std::unique_ptr<ILogError> logger) :
+        explicit CFactoryInfoFast(std::unique_ptr<ILogger> logger) :
             AFactoryInfo{ std::move(logger) }
         {   }
         ~CFactoryInfoFast() = default;

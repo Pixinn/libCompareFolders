@@ -14,14 +14,18 @@
 using namespace std;
 
 static std::list<std::string> Errors;
+static std::list<std::string> Messages;
 
-class CLoggerTest : public cf::ILogError
+class CLoggerTest : public cf::ILogger
 {
 public:
-    void log(const std::string& message) {
+    void error(const std::string& message) {
         Errors.push_back(message);
     }
-    
+    void message(const std::string& message) {
+        Messages.push_back(message);
+    }
+
 };
 
 
@@ -61,7 +65,8 @@ TEST_CASE("MESSAGING")
         {
             const auto str = randstr();
             messages_thread_1->push_back(str);
-            ProxyLogger.error(str);            
+            ProxyLogger.message(str);           
+            ProxyLogger.error(str);
         }
     });
 
@@ -74,6 +79,7 @@ TEST_CASE("MESSAGING")
             const auto str = randstr();
             messages_thread_2->push_back(str);
             ProxyLogger.error(str);
+            ProxyLogger.message(str);
         }
     });
 
@@ -85,6 +91,7 @@ TEST_CASE("MESSAGING")
         {
             const auto str = randstr();
             messages_thread_3->push_back(str);
+            ProxyLogger.message(str);
             ProxyLogger.error(str);
         }
     });
@@ -96,9 +103,19 @@ TEST_CASE("MESSAGING")
     this_thread::sleep_for(1000ms);
 
     REQUIRE(Errors.size() == 3 * NB_MESSAGES);
+    REQUIRE(Messages.size() == 3 * NB_MESSAGES);
+
+    bool same_messages = true;
+    for (const auto& message : Messages) {
+        if (std::find(begin(Errors), end(Errors), message) == end(Errors)) {
+            same_messages = false;
+            break;
+        }
+    }
+    REQUIRE(same_messages);
     
     auto all_messages_thread1_present = true;
-    for (const auto message : *messages_thread_1) {
+    for (const auto& message : *messages_thread_1) {
         if (std::find(begin(Errors), end(Errors), message) == end(Errors)) {            
             all_messages_thread1_present = false;
             break;
@@ -107,7 +124,7 @@ TEST_CASE("MESSAGING")
     REQUIRE(all_messages_thread1_present);
 
     auto all_messages_thread2_present = true;
-    for (const auto message : *messages_thread_2) {
+    for (const auto& message : *messages_thread_2) {
         if (std::find(begin(Errors), end(Errors), message) == end(Errors)) {
             all_messages_thread2_present = false;
             break;
@@ -116,7 +133,7 @@ TEST_CASE("MESSAGING")
     REQUIRE(all_messages_thread2_present);
 
     auto all_messages_thread3_present = true;
-    for (const auto message : *messages_thread_3) {
+    for (const auto& message : *messages_thread_3) {
         if (std::find(begin(Errors), end(Errors), message) == end(Errors)) {
             all_messages_thread1_present = false;
             break;

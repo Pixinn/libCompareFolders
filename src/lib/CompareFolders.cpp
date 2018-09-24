@@ -123,7 +123,7 @@ inline const fs::path path_folder(const string str_path)
 // ===== PUBLIC FUNCTIONS
 
 
-diff_t cf::CompareFolders(const std::string& root_left, const std::string& root_right, const eHashingAlgorithm algo, unique_ptr<ILogError> logger)
+diff_t cf::CompareFolders(const std::string& root_left, const std::string& root_right, const eHashingAlgorithm algo, unique_ptr<ILogger> logger)
 {
     const auto path_folder_1 = path_folder(root_left);
     const auto path_folder_2 = path_folder(root_right);
@@ -159,7 +159,7 @@ diff_t cf::CompareFolders(const json_t left, const json_t right)
 
 
 
-diff_t cf::CompareFolders(const std::string& folder, const json_t json, unique_ptr<ILogError> logger)
+diff_t cf::CompareFolders(const std::string& folder, const json_t json, unique_ptr<ILogger> logger)
 {
     const auto path_folder_1 = path_folder(folder);
 
@@ -175,7 +175,7 @@ diff_t cf::CompareFolders(const std::string& folder, const json_t json, unique_p
 }
 
 
-wstring cf::ScanFolder(const string& path, const cf::eCollectingAlgorithm algo, unique_ptr<ILogError> logger)
+wstring cf::ScanFolder(const string& path, const cf::eCollectingAlgorithm algo, unique_ptr<ILogger> logger)
 {
     const auto folder = path_folder(path);
     unique_ptr<AFactoryInfo> factoryInfo = (algo == eCollectingAlgorithm::SECURE) ?
