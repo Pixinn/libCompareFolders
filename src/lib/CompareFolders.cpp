@@ -21,7 +21,7 @@
 
 #include "CCollectionInfo.hpp"
 #include "CFactoryInfo.hpp"
-#include "CLoggerConcurrent.hpp"
+#include "CProxyLogger.hpp"
 
 #include "CompareFolders.hpp"
 

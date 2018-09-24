@@ -45,7 +45,7 @@ add_library(${LIB_NAME} ${SRC_DIR_LIB}/CCollectionInfo.hpp
 						${SRC_DIR_LIB}/CompareFolders.cpp
                         ${SRC_DIR_LIB}/Utilities.cpp
 						${SRC_DIR_LIB}/TDequeConcurrent.hpp
-						${SRC_DIR_LIB}/CLoggerConcurrent.hpp
+						${SRC_DIR_LIB}/CProxyLogger.hpp
                         ${INCLUDE_DIR}/CompareFolders.hpp
 )
 

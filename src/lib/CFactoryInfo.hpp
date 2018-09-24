@@ -18,7 +18,7 @@
 #ifndef _SRC_CFactoryInfo_hpp__
 #define _SRC_CFactoryInfo_hpp__
 
-#include "CLoggerConcurrent.hpp"
+#include "CProxyLogger.hpp"
 
 #include <memory>
 #include <future>

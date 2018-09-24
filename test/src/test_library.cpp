@@ -15,6 +15,15 @@
 16  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 17 */
 
+
+#include "CompareFolders.hpp"
+
+#include "catch.hpp"
+
+#include <boost/filesystem.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+
 #include <cstdlib>
 #include <cstdint>
 #include <ctime>
@@ -25,23 +34,13 @@
 #include <string>
 #include <thread>
 #include <chrono>
-
-#include <boost/filesystem.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-
-#define CATCH_CONFIG_RUNNER
-#include "catch.hpp"
-
-#include "CompareFolders.hpp"
-
-
+#include <iostream>
 
 namespace fs = boost::filesystem;
 namespace pt = boost::property_tree;
 using namespace std;
 
-
+ 
 
 constexpr unsigned MAX_NB_FOLDERS = 10u;
 constexpr unsigned MAX_NB_FILES_PER_FOLDER = 100u;
@@ -49,11 +48,11 @@ constexpr unsigned MAX_NB_FILES_TO_MODIFY = 7u;
 constexpr unsigned MAX_NB_FILES_TO_ADD = 10u;
 constexpr unsigned MAX_NB_FILES_TO_RENAME = 10u;
 
-static const string FOLDER_ROOT{ "compare_folders" };
+const string FOLDER_ROOT{ "compare_folders" };
 
 
-static pair<fs::path, fs::path> Folders;
-static pair<fs::path, fs::path> FoldersFast;
+pair<fs::path, fs::path> Folders;
+pair<fs::path, fs::path> FoldersFast;
 static cf::diff_t Diff;
 
 
@@ -671,30 +670,3 @@ TEST_CASE("JSON")
 }
 
 
-
-
-
-int main(int argc, char* argv[])
-{
-    CleanUp();
-    srand(static_cast<unsigned>(time(nullptr)));
-
-    try {
-        // global setup...
-        Folders = Build_Test_Files();
-        FoldersFast = Build_Test_Fast_Files(20, Folders.first);
-    }
-    catch (const exception& e) {
-        cout << e.what() << endl;
-        // global clean-up...
-        CleanUp();
-        return -1;
-    }
-
-    auto result = Catch::Session().run(argc, argv);
-
-    // global clean-up...
-    CleanUp();
-
-    return result;
-}

@@ -12,7 +12,11 @@ project(tests LANGUAGES CXX)
 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
-add_executable(${PROJECT_NAME}  ${CMAKE_CURRENT_SOURCE_DIR}/src/test.cpp)
+add_executable(${PROJECT_NAME}  ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+								${CMAKE_CURRENT_SOURCE_DIR}/src/test_messaging.cpp
+								${CMAKE_CURRENT_SOURCE_DIR}/src/test_library.hpp
+								${CMAKE_CURRENT_SOURCE_DIR}/src/test_library.cpp
+)
 
 
 ### COMPILER OPTIONS
@@ -36,6 +40,7 @@ else()
 endif(MSVC)
 
 target_include_directories(${PROJECT_NAME} 	PRIVATE	${CMAKE_CURRENT_SOURCE_DIR}/include
+													${SRC_DIR_LIB}
                                                     ${Boost_INCLUDE_DIRS}
 										    PUBLIC	${INCLUDE_DIR}
 )
