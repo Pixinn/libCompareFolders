@@ -20,12 +20,17 @@
 
 #include "CProxyLogger.hpp"
 
+#include <boost/filesystem.hpp>
+
 #include <memory>
 #include <future>
 #include <thread>
 #include <algorithm>
 #include <vector>
-#include <boost/filesystem.hpp>
+#include <locale>
+#include <codecvt>
+
+
 
 
 namespace fs = boost::filesystem;
@@ -55,6 +60,15 @@ namespace  cf {
         AFactoryInfo(std::unique_ptr<ILogger> logger) :
             _logger{ std::move(logger) }
         {   }
+
+        inline std::string toString(const wchar_t* const str) const {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+            return std::string{ converter.to_bytes(str) };
+        }
+
+        inline std::string toString(const char* const str) const {
+            return std::string{ str };
+        }
 
         /// @brief Lists and returns all **files** entries located inside the provided directory
         const std::list<fs::path> listFiles(const fs::path&) const;

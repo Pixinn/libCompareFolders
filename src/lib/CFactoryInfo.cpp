@@ -19,8 +19,6 @@
 #include <map>
 #include <list>
 #include <vector>
-#include <locale>
-#include <codecvt>
 #include <iostream>
 #include <sstream>
 #include <future>
@@ -43,6 +41,8 @@ using namespace std;
 namespace pt = boost::property_tree;
 
 namespace cf {
+
+
 
     ///////////////////////
 
@@ -122,9 +122,9 @@ namespace cf {
         const auto paths_files = listFiles(root);
         const auto works = splitPaths(paths_files, _nbThreads);
         
-        wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
-        const auto str_root = string{ converter.to_bytes(root.c_str()) };
-        _logger.message("Collecting info (secure algorithm): " + str_root + '\n');
+
+        const auto str_root = toString(root.c_str());
+        _logger.message("Collecting info (secure algorithm) from: " + str_root + '\n');
         _logger.message(to_string(paths_files.size()) + " files to process. This may take some time\n");
             
         // construct the tasks and launch threaded workers
@@ -178,7 +178,7 @@ namespace cf {
             }
         }
 
-        _logger.message("\nDone collection info from: " + str_root + '\n');
+        _logger.message("\nDone collecting info from: " + str_root + '\n');
 
         return info;
     }
@@ -217,7 +217,7 @@ namespace cf {
         const auto paths = listFiles(root);
 
         wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
-        const auto str_root = string{ converter.to_bytes(root.c_str()) };
+        const auto str_root = toString(root.c_str());
         _logger.message("Collecting info (fast algorithm) from: " + str_root +"\n");
         _logger.message(to_string(paths.size()) + " files to process.\n");
 
@@ -238,7 +238,7 @@ namespace cf {
             }
         }
 
-        _logger.message("Done collection info from: " + str_root + '\n');
+        _logger.message("Done collecting info from: " + str_root + '\n');
 
         return collection_info;
     }
