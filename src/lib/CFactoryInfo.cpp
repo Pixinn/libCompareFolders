@@ -121,6 +121,11 @@ namespace cf {
         // split work for tasks
         const auto paths_files = listFiles(root);
         const auto works = splitPaths(paths_files, _nbThreads);
+        
+        wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
+        const auto str_root = string{ converter.to_bytes(root.c_str()) };
+        _logger.message("Collecting info (secure algorithm): " + str_root + '\n');
+        _logger.message(to_string(paths_files.size()) + " files to process. This may take some time\n");
             
         // construct the tasks and launch threaded workers
         typedef struct resultWork_t {
@@ -133,7 +138,7 @@ namespace cf {
         for(const auto& paths : works)
         {
             packaged_task<list<resultWork_t>(const fs::path&, const list<fs::path>&)> task{
-                [] (const fs::path& root, const list<fs::path>& paths)
+                [this] (const fs::path& root, const list<fs::path>& paths)
                 {
                     list<resultWork_t> results;
                     for(const auto& path : paths)
@@ -144,6 +149,7 @@ namespace cf {
                         CryptoPP::FileSource(path.c_str(), true,
                             new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
                         );
+                        this->_logger.message(".");
                         results.emplace_back<resultWork_t>( {
                             fs::relative(path, root),
                             { hash, fs::last_write_time(path), fs::file_size(path) }
@@ -171,6 +177,8 @@ namespace cf {
                 info.setInfo(result.path_relative, result.info);
             }
         }
+
+        _logger.message("\nDone collection info from: " + str_root + '\n');
 
         return info;
     }
@@ -207,6 +215,12 @@ namespace cf {
        
         CCollectionInfo collection_info{ root,  eCollectingAlgorithm::FAST};
         const auto paths = listFiles(root);
+
+        wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
+        const auto str_root = string{ converter.to_bytes(root.c_str()) };
+        _logger.message("Collecting info (fast algorithm) from: " + str_root +"\n");
+        _logger.message(to_string(paths.size()) + " files to process.\n");
+
         for (const auto& path : paths)
         {
             try
@@ -219,10 +233,12 @@ namespace cf {
                 collection_info.setInfo(path_relative, { hash, time_modified, size });
             }
             catch (const fs::filesystem_error& e) {
-                const string message = string{ "Filesystem error: " } +e.what();
+                const string message = string{ "Filesystem error: " } + e.what();
                 _logger.error(message);
             }
         }
+
+        _logger.message("Done collection info from: " + str_root + '\n');
 
         return collection_info;
     }

@@ -21,26 +21,13 @@
 #include <string>
 #include <fstream>
 
-
 #include <tclap/CmdLine.h>
 
+#include "CLogger.hpp"
 #include "CompareFolders.hpp"
 
 
 using namespace std;
-
-/// @Brief custom error "live" logger
-class LogError : public cf::ILogger
-{
-public:
-    void error(const string& err) override {
-        cerr << "ARRRRG! " << err << endl;
-    }
-    void message(const string&) override {}
-};
-
-
-
 
 
 /// @brief Compares the content of two folders and displays the result as JSON
@@ -64,10 +51,8 @@ int main(int argc, char* argv[])
 
     cout << "\nSCANNING \"" << path_folder << '\"' << endl;
     
-    try {
-        
-        LogError logErr;
-        const auto json = cf::ScanFolder(path_folder, algo, make_unique< LogError>());
+    try {      
+        const auto json = cf::ScanFolder(path_folder, algo, make_unique<CLogger>());
         ofstream stream{ path_output , ios::out };
         if (!stream) {
             throw runtime_error{ "Cannot write to " + path_output };
@@ -76,7 +61,9 @@ int main(int argc, char* argv[])
 		cf::WriteWString(stream, json);
     }
     catch (const exception& e) {
-        cout << e.what() << endl;
+        CLogger logger;
+        logger.error(e.what());
+        return -1;
     }
 
 	return 0;

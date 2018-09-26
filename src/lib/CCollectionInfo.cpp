@@ -101,7 +101,7 @@ namespace  cf
         list<diff_t::renamed_t> list_renamed;
 
         if (_algo != rhs._algo) {
-            throw Exception{ "The collection to be compared with is based on another hash algorithm." };
+            throw ExceptionFatal{ "The collection to be compared with is based on another hash algorithm." };
         }
 
         for (const auto& file_info : _file_infos)

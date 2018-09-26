@@ -29,8 +29,9 @@ find_package(Boost 1.65.0 COMPONENTS filesystem system REQUIRED)
 if(NOT Boost_FOUND)
 	message(FATAL_ERROR "\nBoost is mandatory.\nTry to export the root directory of your Boost installation as \"BOOST_DIR\".")
 endif()
-# cryptopp
+# my libraries
 find_package(cryptopp REQUIRED)
+find_package(rlutil REQUIRED)
 
 ### SOURCES
 
@@ -54,7 +55,9 @@ add_library(${LIB_NAME} ${SRC_DIR_LIB}/CCollectionInfo.hpp
 set(APP_COMPAREFOLDERS_NAME "compare_folders")
 set(APP_SCANFOLDER_NAME "scan_folder")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(SRC_DIR_APPS ${CMAKE_SOURCE_DIR}/src/apps)
+
 add_executable(${APP_COMPAREFOLDERS_NAME}  ${SRC_DIR_APPS}/${APP_COMPAREFOLDERS_NAME}/main.cpp)
 add_executable(${APP_SCANFOLDER_NAME}      ${SRC_DIR_APPS}/${APP_SCANFOLDER_NAME}/main.cpp)
 
@@ -67,8 +70,7 @@ set(COMPILE_OPTIONS_UNIX "-std=c++14" "-Wall"  "$<$<CONFIG:Release>:-Werror>" "-
 
 # library
 target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
-												${SRC_DIR_LIB}
-												${CMAKE_INSTALL_INCLUDEDIR}
+                                                ${SRC_DIR_LIB}
 										PUBLIC	${INCLUDE_DIR}
 )
 if(MSVC)
