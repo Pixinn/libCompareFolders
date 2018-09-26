@@ -1,3 +1,6 @@
 [submodule "submodules/cryptopp"]
 	path = submodules/cryptopp
 	url = https://github.com/Pixinn/cryptopp.git
+[submodule "submodules/rlutil"]
+	path = submodules/rlutil
+	url = https://github.com/Pixinn/rlutil.git
