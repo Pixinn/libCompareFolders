@@ -19,8 +19,6 @@
 #include <map>
 #include <list>
 #include <vector>
-#include <locale>
-#include <codecvt>
 #include <iostream>
 #include <sstream>
 #include <future>
@@ -43,6 +41,8 @@ using namespace std;
 namespace pt = boost::property_tree;
 
 namespace cf {
+
+
 
     ///////////////////////
 
@@ -116,11 +116,16 @@ namespace cf {
     /// @detailed   All hashes are computed using a cryptographic hasher. 
     ///             Collecting info can take some time. Thus, an external error logger must be provided
     ///             to give the opportunity to report the errors in real time.
-    CCollectionInfo CFactoryInfoSecure::collectInfo(const fs::path& root, ILogError&) const
+    CCollectionInfo CFactoryInfoSecure::collectInfo(const fs::path& root)
     {
         // split work for tasks
         const auto paths_files = listFiles(root);
         const auto works = splitPaths(paths_files, _nbThreads);
+        
+
+        const auto str_root = toString(root.c_str());
+        _logger.message("Collecting info (secure algorithm) from: " + str_root + '\n');
+        _logger.message(to_string(paths_files.size()) + " files to process. This may take some time\n");
             
         // construct the tasks and launch threaded workers
         typedef struct resultWork_t {
@@ -133,7 +138,7 @@ namespace cf {
         for(const auto& paths : works)
         {
             packaged_task<list<resultWork_t>(const fs::path&, const list<fs::path>&)> task{
-                [] (const fs::path& root, const list<fs::path>& paths)
+                [this] (const fs::path& root, const list<fs::path>& paths)
                 {
                     list<resultWork_t> results;
                     for(const auto& path : paths)
@@ -144,6 +149,7 @@ namespace cf {
                         CryptoPP::FileSource(path.c_str(), true,
                             new CryptoPP::HashFilter(hasher, new CryptoPP::HexEncoder(new CryptoPP::StringSink(hash), isUpperCase))
                         );
+                        this->_logger.message(".");
                         results.emplace_back<resultWork_t>( {
                             fs::relative(path, root),
                             { hash, fs::last_write_time(path), fs::file_size(path) }
@@ -171,6 +177,8 @@ namespace cf {
                 info.setInfo(result.path_relative, result.info);
             }
         }
+
+        _logger.message("\nDone collecting info from: " + str_root + '\n');
 
         return info;
     }
@@ -202,14 +210,20 @@ namespace cf {
     ///             Thus, the time consuming *secure* hash is only computed for those duplicates.
     ///             Collecting info can take some time. Thus, an external error logger must be provided
     ///             to give the opportunity to report the errors in real time.
-    CCollectionInfo CFactoryInfoFast::collectInfo(const fs::path& root, ILogError& logger) const
+    CCollectionInfo CFactoryInfoFast::collectInfo(const fs::path& root)
     {
        
         CCollectionInfo collection_info{ root,  eCollectingAlgorithm::FAST};
-        try
+        const auto paths = listFiles(root);
+
+        wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
+        const auto str_root = toString(root.c_str());
+        _logger.message("Collecting info (fast algorithm) from: " + str_root +"\n");
+        _logger.message(to_string(paths.size()) + " files to process.\n");
+
+        for (const auto& path : paths)
         {
-            const auto paths = listFiles(root);
-            for (const auto& path : paths)
+            try
             {
                 const auto path_relative = fs::relative(path, root);
                 const auto time_modified = fs::last_write_time(path);
@@ -218,12 +232,13 @@ namespace cf {
 
                 collection_info.setInfo(path_relative, { hash, time_modified, size });
             }
+            catch (const fs::filesystem_error& e) {
+                const string message = string{ "Filesystem error: " } + e.what();
+                _logger.error(message);
+            }
         }
-        catch (const fs::filesystem_error& e) {
-            const string message = string{ "Filesystem error: " } +e.what();
-            logger.log(message);
-            throw; // TODO handle and don't rethrow
-        }
+
+        _logger.message("Done collecting info from: " + str_root + '\n');
 
         return collection_info;
     }

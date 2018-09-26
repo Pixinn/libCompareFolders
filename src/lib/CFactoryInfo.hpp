@@ -18,12 +18,19 @@
 #ifndef _SRC_CFactoryInfo_hpp__
 #define _SRC_CFactoryInfo_hpp__
 
+#include "CProxyLogger.hpp"
+
+#include <boost/filesystem.hpp>
+
 #include <memory>
 #include <future>
 #include <thread>
 #include <algorithm>
 #include <vector>
-#include <boost/filesystem.hpp>
+#include <locale>
+#include <codecvt>
+
+
 
 
 namespace fs = boost::filesystem;
@@ -31,7 +38,6 @@ namespace fs = boost::filesystem;
 namespace  cf {
 
     class CCollectionInfo;
-    class ILogError;
     
     /// @brief Abstract class, root of the FactoryInfo class hierarchy
     class AFactoryInfo
@@ -48,13 +54,27 @@ namespace  cf {
         /// @brief Builds a collection with all the directory's files' hashes
         /// @param root Root folder: all its files will be hashed
         /// @param loggerErr Will log eventual errors
-        virtual CCollectionInfo collectInfo(const fs::path& root, ILogError& loggerErr) const = 0;
-    
+        virtual CCollectionInfo collectInfo(const fs::path& root) = 0;
+
     protected:
-        AFactoryInfo() = default;
+        AFactoryInfo(std::unique_ptr<ILogger> logger) :
+            _logger{ std::move(logger) }
+        {   }
+
+        inline std::string toString(const wchar_t* const str) const {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+            return std::string{ converter.to_bytes(str) };
+        }
+
+        inline std::string toString(const char* const str) const {
+            return std::string{ str };
+        }
 
         /// @brief Lists and returns all **files** entries located inside the provided directory
         const std::list<fs::path> listFiles(const fs::path&) const;
+
+        CProxyLogger _logger;
+
     };
 
     
@@ -63,7 +83,8 @@ namespace  cf {
     class CFactoryInfoSecure : public AFactoryInfo
     {
     public:
-        explicit CFactoryInfoSecure() :
+        explicit CFactoryInfoSecure(std::unique_ptr<ILogger> logger) :
+            AFactoryInfo{std::move(logger)},
             _nbThreads{std::max(1u, std::thread::hardware_concurrency())}
         {   }
         ~CFactoryInfoSecure() = default;
@@ -71,7 +92,7 @@ namespace  cf {
         /// @brief Builds a collection with all the directory's files' hashes
         /// @param root Root folder: all its files will be hashed
         /// @param loggerErr Will log eventual errors
-        CCollectionInfo collectInfo(const fs::path& root, ILogError& loggerErr) const override;
+        CCollectionInfo collectInfo(const fs::path& root) override;
 
     private:
         /// @brief Splits the paths in vectors (*slices*)
@@ -85,13 +106,15 @@ namespace  cf {
     class CFactoryInfoFast : public AFactoryInfo
     {
     public:
-        explicit CFactoryInfoFast() = default;
+        explicit CFactoryInfoFast(std::unique_ptr<ILogger> logger) :
+            AFactoryInfo{ std::move(logger) }
+        {   }
         ~CFactoryInfoFast() = default;
 
         /// @brief Builds a collection with all the directory's files' hashes
         /// @param root Root folder: all its files will be hashed
         /// @param loggerErr Will log eventual errors
-        CCollectionInfo collectInfo(const fs::path& root, ILogError& loggerErr) const override;
+        CCollectionInfo collectInfo(const fs::path& root) override;
 
     private:
         /// @brief Computes and returns the *fast hash* from the info provided

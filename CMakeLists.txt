@@ -17,6 +17,7 @@ if(CMAKE_SYSTEM MATCHES "Windows")
   endif()
   set(CMAKE_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
 endif(CMAKE_SYSTEM MATCHES "Windows")
+include(GNUInstallDirs)
 
 # threads
 find_package (Threads REQUIRED)
@@ -28,8 +29,9 @@ find_package(Boost 1.65.0 COMPONENTS filesystem system REQUIRED)
 if(NOT Boost_FOUND)
 	message(FATAL_ERROR "\nBoost is mandatory.\nTry to export the root directory of your Boost installation as \"BOOST_DIR\".")
 endif()
-# cryptopp
-find_package(cryptopp 6.1.0 REQUIRED)
+# my libraries
+find_package(cryptopp REQUIRED)
+find_package(rlutil REQUIRED)
 
 ### SOURCES
 
@@ -44,26 +46,30 @@ add_library(${LIB_NAME} ${SRC_DIR_LIB}/CCollectionInfo.hpp
                         ${SRC_DIR_LIB}/CFactoryInfo.cpp
 						${SRC_DIR_LIB}/CompareFolders.cpp
                         ${SRC_DIR_LIB}/Utilities.cpp
-                        ${INCLUDE_DIR}/CompareFolders.hpp)
+						${SRC_DIR_LIB}/TDequeConcurrent.hpp
+						${SRC_DIR_LIB}/CProxyLogger.hpp
+                        ${INCLUDE_DIR}/CompareFolders.hpp
+)
 
 # applications
 set(APP_COMPAREFOLDERS_NAME "compare_folders")
 set(APP_SCANFOLDER_NAME "scan_folder")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib)
 set(SRC_DIR_APPS ${CMAKE_SOURCE_DIR}/src/apps)
+
 add_executable(${APP_COMPAREFOLDERS_NAME}  ${SRC_DIR_APPS}/${APP_COMPAREFOLDERS_NAME}/main.cpp)
 add_executable(${APP_SCANFOLDER_NAME}      ${SRC_DIR_APPS}/${APP_SCANFOLDER_NAME}/main.cpp)
 
 ### COMPILER OPTIONS
 
 # common
-set_property(GLOBAL PROPERTY CXX_STANDARD 11)
+set_property(GLOBAL PROPERTY CXX_STANDARD 14)
 set(COMPILE_OPTIONS_MSVC "/W4" "/MP" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
-set(COMPILE_OPTIONS_UNIX "-std=c++11" "-Wall"  "$<$<CONFIG:Release>:-Werror>" "-Wno-missing-braces") #"missing-braces" only emitted by Xcode (deprecated in GCC)
+set(COMPILE_OPTIONS_UNIX "-std=c++14" "-Wall"  "$<$<CONFIG:Release>:-Werror>" "-Wno-missing-braces") #"missing-braces" only emitted by Xcode (deprecated in GCC)
 
 # library
 target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
-                                                ${CMAKE_SOURCE_DIR}/submodules
                                                 ${SRC_DIR_LIB}
 										PUBLIC	${INCLUDE_DIR}
 )
@@ -99,15 +105,11 @@ else()
 		${COMPILE_OPTIONS_UNIX}
     )
 endif(MSVC)
-target_include_directories(${APP_COMPAREFOLDERS_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS} 			        # to be removed
-													    ${CMAKE_SOURCE_DIR}/submodules	                # to be removed
-													    ${SRC_DIR_APPS}/${APP_COMPAREFOLDERS_NAME}/	    # to be removed
+target_include_directories(${APP_COMPAREFOLDERS_NAME} 	PRIVATE	
 													    ${SRC_DIR_APPS}/common
                                                         ${INCLUDE_DIR}
 )
-target_include_directories(${APP_SCANFOLDER_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS} 			        # to be removed
-													    ${CMAKE_SOURCE_DIR}/submodules	                # to be removed
-													    ${SRC_DIR_APPS}/${APP_SCANFOLDER_NAME}/	    # to be removed
+target_include_directories(${APP_SCANFOLDER_NAME} 	PRIVATE
                                                         ${SRC_DIR_APPS}/common
 													    ${INCLUDE_DIR}
 )
