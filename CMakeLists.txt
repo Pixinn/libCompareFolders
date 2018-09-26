@@ -17,6 +17,7 @@ if(CMAKE_SYSTEM MATCHES "Windows")
   endif()
   set(CMAKE_PREFIX_PATH ${CMAKE_INSTALL_PREFIX})
 endif(CMAKE_SYSTEM MATCHES "Windows")
+include(GNUInstallDirs)
 
 # threads
 find_package (Threads REQUIRED)
@@ -29,7 +30,7 @@ if(NOT Boost_FOUND)
 	message(FATAL_ERROR "\nBoost is mandatory.\nTry to export the root directory of your Boost installation as \"BOOST_DIR\".")
 endif()
 # cryptopp
-find_package(cryptopp 6.1.0 REQUIRED)
+find_package(cryptopp REQUIRED)
 
 ### SOURCES
 
@@ -63,8 +64,8 @@ set(COMPILE_OPTIONS_UNIX "-std=c++11" "-Wall"  "$<$<CONFIG:Release>:-Werror>" "-
 
 # library
 target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
-                                                ${CMAKE_SOURCE_DIR}/submodules
-                                                ${SRC_DIR_LIB}
+												${SRC_DIR_LIB}
+												${CMAKE_INSTALL_INCLUDEDIR}
 										PUBLIC	${INCLUDE_DIR}
 )
 if(MSVC)
@@ -99,15 +100,11 @@ else()
 		${COMPILE_OPTIONS_UNIX}
     )
 endif(MSVC)
-target_include_directories(${APP_COMPAREFOLDERS_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS} 			        # to be removed
-													    ${CMAKE_SOURCE_DIR}/submodules	                # to be removed
-													    ${SRC_DIR_APPS}/${APP_COMPAREFOLDERS_NAME}/	    # to be removed
+target_include_directories(${APP_COMPAREFOLDERS_NAME} 	PRIVATE	
 													    ${SRC_DIR_APPS}/common
                                                         ${INCLUDE_DIR}
 )
-target_include_directories(${APP_SCANFOLDER_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS} 			        # to be removed
-													    ${CMAKE_SOURCE_DIR}/submodules	                # to be removed
-													    ${SRC_DIR_APPS}/${APP_SCANFOLDER_NAME}/	    # to be removed
+target_include_directories(${APP_SCANFOLDER_NAME} 	PRIVATE
                                                         ${SRC_DIR_APPS}/common
 													    ${INCLUDE_DIR}
 )
