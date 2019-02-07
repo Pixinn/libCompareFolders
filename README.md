@@ -17,13 +17,12 @@ The project builds the library plus two **applications** using it:
 ## Prerequisites
 ### Submodules
 
-*CompareFolders* relies on the following **git submodule**
+*CompareFolders* relies on the following **git submodules**, located in the *submodules* folder.
 
  - cryptopp
+ - rlutil
 
-This submodule is located in the *submodules* folder.
-
-In order to build *compare_folder* the submodule has to have been built previously.
+In order to build *compare_folder* the submodules have to have been previoulsy built and **installed**.
 
 ### Boost
 
