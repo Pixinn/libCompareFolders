@@ -17,19 +17,21 @@ int main(int argc, char* argv[])
     CleanUp();
     srand(static_cast<unsigned>(time(nullptr)));
 
+    int result = -1;
+
     try {
         // global setup...
         Folders = Build_Test_Files();
         FoldersFast = Build_Test_Fast_Files(20, Folders.first);
+
+        result = Catch::Session().run(argc, argv);
     }
     catch (const exception& e) {
         cout << e.what() << endl;
         // global clean-up...
         CleanUp();
-        return -1;
     }
-
-    auto result = Catch::Session().run(argc, argv);
+   
 
     // global clean-up...
     CleanUp();

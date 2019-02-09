@@ -7,23 +7,28 @@
 #include "catch.hpp"
 
 #include <list>
+#include <set>
 #include <thread>
 #include <algorithm>
 #include <chrono>
 
 using namespace std;
 
-static std::list<std::string> Errors;
-static std::list<std::string> Messages;
+static std::set<std::string> Errors;
+static std::set<std::string> Messages;
+static unsigned Nb_messages = 0u;
+static unsigned Nb_errors = 0u;
 
 class CLoggerTest : public cf::ILogger
 {
 public:
     void error(const std::string& message) {
-        Errors.push_back(message);
+        Errors.insert(message);
+        ++Nb_errors;
     }
     void message(const std::string& message) {
-        Messages.push_back(message);
+        Messages.insert(message);
+        ++Nb_messages;
     }
 
 };
@@ -34,7 +39,7 @@ static cf::CProxyLogger ProxyLogger{ std::make_unique< CLoggerTest >() };
 
 TEST_CASE("MESSAGING")
 {
-    constexpr int NB_MESSAGES = 10000;
+    static constexpr int NB_MESSAGES = 30000;
     auto messages_thread_1 = make_shared<list<std::string>>();
     auto messages_thread_2 = make_shared<list<std::string>>();
     auto messages_thread_3 = make_shared<list<std::string>>();
@@ -51,13 +56,13 @@ TEST_CASE("MESSAGING")
 
     const auto randstr = [randchar]() -> string
     {
-        const size_t length = rand() % 64;
+        const size_t length = rand() % 32;
         string str(length, 0);
         generate_n(str.begin(), length, randchar);
         return str;
     };
 
-    auto task_1 = thread([&NB_MESSAGES, messages_thread_1, randstr]()
+    auto task_1 = thread([messages_thread_1, randstr]()
     {
         using namespace std::chrono_literals;
         this_thread::sleep_for(100ms);
@@ -70,7 +75,7 @@ TEST_CASE("MESSAGING")
         }
     });
 
-    auto task_2 = thread([&NB_MESSAGES, messages_thread_2, randstr]()
+    auto task_2 = thread([messages_thread_2, randstr]()
     {
         using namespace std::chrono_literals;
         this_thread::sleep_for(100ms);
@@ -83,7 +88,7 @@ TEST_CASE("MESSAGING")
         }
     });
 
-    auto task_3 = thread([&NB_MESSAGES, messages_thread_3, randstr]()
+    auto task_3 = thread([messages_thread_3, randstr]()
     {
         using namespace std::chrono_literals;
         this_thread::sleep_for(100ms);
@@ -102,16 +107,10 @@ TEST_CASE("MESSAGING")
 
     this_thread::sleep_for(1000ms);
 
-    REQUIRE(Errors.size() == 3 * NB_MESSAGES);
-    REQUIRE(Messages.size() == 3 * NB_MESSAGES);
+    REQUIRE(Nb_errors == 3 * NB_MESSAGES);
+    REQUIRE(Nb_messages == 3 * NB_MESSAGES);
 
-    bool same_messages = true;
-    for (const auto& message : Messages) {
-        if (std::find(begin(Errors), end(Errors), message) == end(Errors)) {
-            same_messages = false;
-            break;
-        }
-    }
+    const auto same_messages = (Errors == Messages);
     REQUIRE(same_messages);
     
     auto all_messages_thread1_present = true;
