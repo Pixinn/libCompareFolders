@@ -79,32 +79,34 @@ namespace cf {
         streamFile.imbue(locale(locale{}, new codecvt_utf8<wchar_t>));
         wstringstream streamStr;
         streamStr << streamFile.rdbuf();
-        // Populates the PTree from the stream
-        wstring_convert<codecvt_utf8_utf16<wchar_t>> codec_utf8;
-        pt::wptree root;
-        pt::read_json(streamStr, root);
-        const auto generator = root.get<wstring>(JSON_KEYS.GENERATOR);
-        if (generator != JSON_CONST_VALUES.GENERATOR) {
-            throw ExceptionFatal{ "This is not a proper file." };
-        }
-        const auto algo_hash = root.get<wstring>(JSON_KEYS.ALGO_HASH);
-        CCollectionInfo collection{ fs::path{ root.get<wstring>(JSON_KEYS.ROOT) },
-                                    algo_hash == JSON_CONST_VALUES.ALGO_HASH_FAST ? eCollectingAlgorithm::FAST  : eCollectingAlgorithm::SECURE };
+        try
+        {
+            // Populates the PTree from the stream
+            wstring_convert<codecvt_utf8_utf16<wchar_t>> codec_utf8;
+            pt::wptree root;
+            pt::read_json(streamStr, root);
+            const auto generator = root.get<wstring>(JSON_KEYS.GENERATOR);
+            if (generator != JSON_CONST_VALUES.GENERATOR) {
+                throw ExceptionFatal{ "This is not a proper file." };
+            }
+            const auto algo_hash = root.get<wstring>(JSON_KEYS.ALGO_HASH);
+            CCollectionInfo collection{ fs::path{ root.get<wstring>(JSON_KEYS.ROOT) },
+                                        algo_hash == JSON_CONST_VALUES.ALGO_HASH_FAST ? eCollectingAlgorithm::FAST  : eCollectingAlgorithm::SECURE };
 
-        try {
             for (const auto& file : root.get_child(JSON_KEYS.CONTENT.FILES)) {
                 const auto hash = file.second.get_child(JSON_KEYS.CONTENT.HASH).data();
                 const time_t time = std::stoll(file.second.get_child(JSON_KEYS.CONTENT.TIME).data());
                 const auto size = std::stoull(file.second.get_child(JSON_KEYS.CONTENT.SIZE).data());
                 collection.setInfo(fs::path{ file.first }, { codec_utf8.to_bytes(hash) , time, size });
             }
+            
+            return collection;
         }
         catch (const pt::ptree_error& e)
         {
             throw ExceptionFatal{ "An error occured while parsing " + json_path.string() + " : " + e.what() };
         }
 
-        return collection;
     }
 
 
