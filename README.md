@@ -24,11 +24,19 @@ The project builds the library plus two **applications** using it:
 
 In order to build *compare_folder* the submodules have to have been previoulsy built and **installed**.
 
+To update the sublodules:
+
+> git submodule init
+>
+> git submodule update --recursive
+
 ### Boost
 
 *CompareFolders* also relies on **Boost**. Version 1_6_5 is the minimum recommended version.
 
-You may set the environment variable **BOOST_DIR** to your local install of boost in order to help cmake find it.
+IMPORTANT:
+* Build Boost using the option  *--build-type=complete*
+* You may set the environment variable **BOOST_DIR** to your local install of boost in order to help cmake find it.
 
 ### Cmake
 
@@ -38,7 +46,13 @@ The Built system uses *cmake*. Version 3.9 is the minimum recommended version. I
 > 
 > cmake ..
 > 
-> cmake --build .
+> cmake --build . --config release
+
+# Test
+
+In the build folder run
+
+> ctest -C release
 
 # Documentation
 

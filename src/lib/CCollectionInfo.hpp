@@ -76,7 +76,7 @@ namespace  cf {
         diff_t compare(CCollectionInfo rhs) const;
 
         /// @brief returns the number of paths
-        inline unsigned size() {
+        inline std::size_t size() {
             return _file_infos.size();
         }
         

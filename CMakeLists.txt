@@ -25,7 +25,7 @@ find_package (Threads REQUIRED)
 set(BOOST_ROOT $ENV{BOOST_DIR})
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
-find_package(Boost 1.65.0 COMPONENTS filesystem system REQUIRED)
+find_package(Boost COMPONENTS filesystem system REQUIRED)
 if(NOT Boost_FOUND)
 	message(FATAL_ERROR "\nBoost is mandatory.\nTry to export the root directory of your Boost installation as \"BOOST_DIR\".")
 endif()
@@ -64,9 +64,8 @@ add_executable(${APP_SCANFOLDER_NAME}      ${SRC_DIR_APPS}/${APP_SCANFOLDER_NAME
 ### COMPILER OPTIONS
 
 # common
-set_property(GLOBAL PROPERTY CXX_STANDARD 14)
 set(COMPILE_OPTIONS_MSVC "/W4" "/MP" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
-set(COMPILE_OPTIONS_UNIX "-std=c++14" "-Wall"  "$<$<CONFIG:Release>:-Werror>" "-Wno-missing-braces") #"missing-braces" only emitted by Xcode (deprecated in GCC)
+set(COMPILE_OPTIONS_UNIX "-std=c++17" "-Wall"  "$<$<CONFIG:Release>:-Werror>" "-Wno-missing-braces") #"missing-braces" only emitted by Xcode (deprecated in GCC)
 
 # library
 target_include_directories(${LIB_NAME} 	PRIVATE	${Boost_INCLUDE_DIRS}
@@ -118,10 +117,13 @@ target_include_directories(${APP_SCANFOLDER_NAME} 	PRIVATE
 
 # library
 target_link_libraries(${LIB_NAME} ${Boost_LIBRARIES} cryptopp-static)
+set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 14)
 
 # applications
 target_link_libraries(${APP_COMPAREFOLDERS_NAME} ${LIB_NAME} ${CMAKE_THREAD_LIBS_INIT})
+set_property(TARGET ${APP_COMPAREFOLDERS_NAME} PROPERTY CXX_STANDARD 14)
 target_link_libraries(${APP_SCANFOLDER_NAME} ${LIB_NAME} ${CMAKE_THREAD_LIBS_INIT})
+set_property(TARGET ${APP_SCANFOLDER_NAME} PROPERTY CXX_STANDARD 14)
 
 ### TEST
 enable_testing()
