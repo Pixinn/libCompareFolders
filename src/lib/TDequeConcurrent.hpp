@@ -23,7 +23,7 @@
 #include <deque>
 #include <mutex>
 #include <condition_variable>
-
+#include <cstdint>
 
 namespace cf {
 
@@ -61,22 +61,29 @@ namespace cf {
             _collection.clear();
         }
 
-        //! \brief Returns the front element and removes it from the collection
-        //!
-        //!        No exception is ever returned as we garanty that the deque is not empty
-        //!        before trying to return data.
-        T pop_front(void) noexcept
+        //! \brief Returns True if the deque is empty
+        bool empty(void)
         {
             std::unique_lock<std::mutex> lock{ _mutex };
-            while (_collection.empty()) {
-                _condNewData.wait(lock);
-            }
-            auto elem = std::move(_collection.front());
-            _collection.pop_front();
-            return elem;
+            return _collection.empty();
         }
+        
+        //! \brief Returns the front element and removes it from the collection
+        //!        Throw a logic_error if deque is empty
+        T pop_front(void)
+        {
+            if (! empty()) {
+                std::unique_lock<std::mutex> lock{ _mutex };
+                auto elem = std::move(_collection.front());
+                _collection.pop_front();
+                return elem;
+            }
+            else
+            {
+                throw std::logic_error{ "Trying to pop from empty deque!" };
+            }
 
-
+        }
 
     private:
 
