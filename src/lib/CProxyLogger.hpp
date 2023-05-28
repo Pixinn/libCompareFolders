@@ -3,7 +3,6 @@
 
 #include "CompareFolders.hpp"
 #include "TDequeConcurrent.hpp"
-#include <iostream>
 #include <string>
 #include <thread>
 
