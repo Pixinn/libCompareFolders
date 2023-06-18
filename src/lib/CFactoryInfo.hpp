@@ -43,7 +43,10 @@ namespace  cf {
     class AFactoryInfo
     {
     public:
-        virtual ~AFactoryInfo() = default;
+        virtual ~AFactoryInfo()
+        {
+          _logger.stop();
+        }
         AFactoryInfo(const AFactoryInfo&) = delete;
         void operator=(const AFactoryInfo&) = delete;
 
