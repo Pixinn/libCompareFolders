@@ -327,7 +327,7 @@ pair<fs::path, fs::path> Build_Test_Fast_Files(unsigned nb_files, const fs::path
     // In order for those file to have the same "last write time",
     // their creation shall begin at the start of a second and be completed before the start of the following one!
     Wait_For_Next_Second();
-    for(const auto info : infos) {
+    for(const auto& info : infos) {
         fs::copy_file(info.path, folder_left / info.path.filename() );
     }
     Copy_Folder(folder_left, folder_right);
