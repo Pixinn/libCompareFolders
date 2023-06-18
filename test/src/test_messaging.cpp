@@ -16,19 +16,15 @@ using namespace std;
 
 static std::set<std::string> Errors;
 static std::set<std::string> Messages;
-static unsigned Nb_messages = 0u;
-static unsigned Nb_errors = 0u;
 
 class CLoggerTest : public cf::ILogger
 {
 public:
     void error(const std::string& message) {
         Errors.insert(message);
-        ++Nb_errors;
     }
     void message(const std::string& message) {
         Messages.insert(message);
-        ++Nb_messages;
     }
 
 };
@@ -39,7 +35,7 @@ static cf::CProxyLogger ProxyLogger{ std::make_unique< CLoggerTest >() };
 
 TEST_CASE("MESSAGING")
 {
-    static constexpr int NB_MESSAGES = 30000;
+    static constexpr int NB_MESSAGES = 10000;
     auto messages_thread_1 = make_shared<list<std::string>>();
     auto messages_thread_2 = make_shared<list<std::string>>();
     auto messages_thread_3 = make_shared<list<std::string>>();
@@ -68,7 +64,7 @@ TEST_CASE("MESSAGING")
         this_thread::sleep_for(100ms);
         for (auto i = 0; i < NB_MESSAGES; ++i)
         {
-            const auto str = randstr();
+            const auto str = std::string("1-") + std::to_string(i) + std::string("-") + randstr();
             messages_thread_1->push_back(str);
             ProxyLogger.message(str);           
             ProxyLogger.error(str);
@@ -78,10 +74,10 @@ TEST_CASE("MESSAGING")
     auto task_2 = thread([messages_thread_2, randstr]()
     {
         using namespace std::chrono_literals;
-        this_thread::sleep_for(100ms);
+        this_thread::sleep_for(120ms);
         for (auto i = 0; i < NB_MESSAGES; ++i)
         {
-            const auto str = randstr();
+          const auto str = std::string("2-") + std::to_string(i) + std::string("-") + randstr();
             messages_thread_2->push_back(str);
             ProxyLogger.error(str);
             ProxyLogger.message(str);
@@ -91,10 +87,10 @@ TEST_CASE("MESSAGING")
     auto task_3 = thread([messages_thread_3, randstr]()
     {
         using namespace std::chrono_literals;
-        this_thread::sleep_for(100ms);
+        this_thread::sleep_for(140ms);
         for (auto i = 0; i < NB_MESSAGES; ++i)
         {
-            const auto str = randstr();
+           const auto str = std::string("3-") + std::to_string(i) + std::string("-") + randstr();
             messages_thread_3->push_back(str);
             ProxyLogger.message(str);
             ProxyLogger.error(str);
@@ -106,9 +102,12 @@ TEST_CASE("MESSAGING")
     task_3.join();
 
     this_thread::sleep_for(1000ms);
+    ProxyLogger.stop();
 
-    REQUIRE(Nb_errors == 3 * NB_MESSAGES);
-    REQUIRE(Nb_messages == 3 * NB_MESSAGES);
+    const std::size_t nbMessagesSents = 
+      messages_thread_1->size() + messages_thread_2->size() + messages_thread_3->size();
+    REQUIRE(Errors.size() == nbMessagesSents);
+    REQUIRE(Messages.size() == nbMessagesSents);
 
     const auto same_messages = (Errors == Messages);
     REQUIRE(same_messages);

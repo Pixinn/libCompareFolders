@@ -22,6 +22,7 @@
 
 #include <deque>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 
 
@@ -36,6 +37,10 @@ namespace cf {
     class TDequeConcurrent {
 
     public:
+      TDequeConcurrent() :
+        _stopRequested{false}
+      {      }
+
         //! \brief Emplaces a new instance of T in front of the deque
         template<typename... Args>
         void emplace_front(Args&&... args)
@@ -67,13 +72,39 @@ namespace cf {
         //!        before trying to return data.
         T pop_front(void) noexcept
         {
+          T elem;
+
+          if (!_stopRequested.load(std::memory_order_relaxed))
+          {
             std::unique_lock<std::mutex> lock{ _mutex };
             while (_collection.empty()) {
-                _condNewData.wait(lock);
+              _condNewData.wait(lock);
+              if (_stopRequested.load(std::memory_order_relaxed)) {
+                break;
+              }
             }
-            auto elem = std::move(_collection.front());
-            _collection.pop_front();
-            return elem;
+
+            if (!_stopRequested.load(std::memory_order_relaxed)) {
+              elem = std::move(_collection.front());
+              _collection.pop_front();
+            }
+          }
+
+          return elem;
+        }
+
+        //! \brief returns true if the collection is empty
+        bool empty() const
+        {
+          std::lock_guard<std::mutex> lock{ _mutex };
+          return _collection.empty();
+        }
+
+        //! \brief stops waiting for new messages
+        void stop()
+        {
+          _stopRequested.store(true, std::memory_order_release);
+          _condNewData.notify_all();
         }
 
 
@@ -86,15 +117,18 @@ namespace cf {
         template<class F>
         void addData_protected(F&& fct)
         {
-            std::unique_lock<std::mutex> lock{ _mutex };
+          {
+            std::lock_guard<std::mutex> lock{ _mutex };
             fct();
-            lock.unlock();
+          }
             _condNewData.notify_one();
         }
 
         std::deque<T> _collection;              ///< Concrete, not thread safe, storage.
-        std::mutex    _mutex;                   ///< Mutex protecting the concrete storage
+        mutable std::mutex    _mutex;                   ///< Mutex protecting the concrete storage
         std::condition_variable _condNewData;   ///< Condition used to notify that new data are available.
+
+        std::atomic_bool _stopRequested;
     };
 
 }

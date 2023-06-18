@@ -452,7 +452,8 @@ void CleanUp()
     if (FOLDER_ROOT.empty()) {
         return;
     }
-    const auto folder = fs::temp_directory_path() / FOLDER_ROOT;
+    const auto tmp_dir = fs::temp_directory_path();
+    const auto folder = tmp_dir / FOLDER_ROOT;
     if (!fs::is_directory(folder)) {
         return;
     }
