@@ -44,7 +44,7 @@ namespace cf {
             while (true) {
                 auto message = this->_queue_messages.pop_front(); //blocks until a message is in the list
                 {
-                    std::lock_guard<std::mutex>{this->_mutex_logger};
+                    const std::lock_guard<std::mutex> lock{this->_mutex_logger};
                     _ptr_loggers->message(message);
                 }
             }
@@ -55,7 +55,7 @@ namespace cf {
             while (true) {
                 auto message = this->_queue_errors.pop_front(); //blocks until a message is in the list
                 {
-                    std::lock_guard<std::mutex>{this->_mutex_logger};
+                    const std::lock_guard<std::mutex> lock{ this->_mutex_logger };
                     _ptr_loggers->error(message);
                 }
             }
