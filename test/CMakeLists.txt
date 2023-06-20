@@ -21,10 +21,7 @@ add_executable(${PROJECT_NAME}  ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
 
 ### COMPILER OPTIONS
 
-# common
-#set_property(GLOBAL PROPERTY CXX_STANDARD 11)
-#set(COMPILE_OPTIONS_MSVC "/W4" "$<$<CONFIG:Debug>:/MTd>" "$<$<CONFIG:Release>:/MT>" "$<$<CONFIG:Release>:/WX>")
-#set(COMPILE_OPTIONS_UNIX "-std=c++11" "-Wall"  "$<$<CONFIG:Release>:-Werror>")
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 14)
 
 
 if(MSVC)

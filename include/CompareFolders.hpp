@@ -27,9 +27,9 @@
 namespace cf
 {
       /// @brief Description of the keys used in JSON files
-     typedef struct {
+      struct JSON_KEYS_t{
          /// @brief Differences betwwen two folders
-         typedef struct {
+         struct DIFF_t{
              std::wstring IDENTICAL;///< Identical files
              std::wstring DIFFERENT;///< Different files
              std::wstring UNIQUE_LEFT;///< Files that are unique to the left
@@ -37,27 +37,27 @@ namespace cf
              std::wstring RENAMED;///< Files that are identical but where renamed, moved or duplicated
              std::wstring LEFT;
              std::wstring RIGHT;
-         } DIFF_t;
+         };
          /// @brief Description of a folder's content
-         typedef struct {
+         struct CONTENT_t{
              std::wstring FILES;//< Files inside a folder
              std::wstring HASH;///< Hash of a file's content
              std::wstring TIME;///< Time of file's last modification
              std::wstring SIZE;///< Size of the file
-         } CONTENT_t;
+         };
          std::wstring GENERATOR; ///< Program used to generate the JSON file
          std::wstring ROOT;///< Root folder
          std::wstring ALGO_HASH;///< Algorithm used to compute hashes
          DIFF_t DIFF;
          CONTENT_t CONTENT;
-     } JSON_KEYS_t;
+     };
 
      /// @brief Description of the const values that may be used in JSON files
-     typedef struct {
+     struct JSON_CONST_VALUES_t {
          std::wstring GENERATOR;
          std::wstring ALGO_HASH_FAST;
          std::wstring ALGO_HASH_SECURE;
-     } JSON_CONST_VALUES_t;
+     };
 
      static const JSON_KEYS_t JSON_KEYS {
          L"Generator",                   // GENERATOR
@@ -129,29 +129,29 @@ namespace cf
 
     /// @brief JSON file
 	/// @details This is a mere facade to the path
-    typedef struct json_t {
+    struct json_t {
         explicit json_t(const std::string& p_path) :
             path{ p_path }
         {     }
         const std::string path;
-    } json_t;
+    };
 
 
     /// @brief Holds the differences between two folders named *left* and *right*
-    typedef struct diff_t
+    struct diff_t
     {
         /// @brief Custom operator== as std::list does not provide any
         bool operator==(const diff_t& rhs) const noexcept;
 
         /// @brief Files with different path but the very same content.
         /// Those files can have **duplicates** both left and right
-        typedef struct renamed_t
+        struct renamed_t
         {
             bool operator==(const renamed_t& rhs) const noexcept;
             std::string hash;             ///< hash of the files
             std::list<std::wstring> left;  ///< Left files with the same content
             std::list<std::wstring> right; ///< Right files with the same content
-        } renamed_t;
+        };
 
         std::wstring root_left;               ///< Left directory root path
         std::wstring root_right;              ///< Right directory root path
@@ -160,7 +160,7 @@ namespace cf
         std::list<std::wstring> unique_left;  ///< Files that are unique to the left directory
         std::list<std::wstring> unique_right; ///< Files that are unique to the right directory
         std::list<renamed_t> renamed;        ///< Files with different reative path that have the same content
-    } diff_t;
+    };
 
 
     /// @brief Algorithm used to compute file's hashes
